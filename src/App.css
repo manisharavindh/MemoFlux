@@ -3,17 +3,77 @@
   --secondary-color: #090A09;
 }
 
-
-body{
-  height: 100vh;
-  width: 100vw;
-  background-color: var(--secondary-color);
-  color: var(--primary-color);
-
-  display: grid;
-  place-items: center;
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.App {
-  text-align: center;
+.App{
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.App.light {
+  background-color: var(--primary-color);
+  color: var(--secondary-color);
+}
+
+.App.dark {
+  background-color: var(--secondary-color);
+  color: var(--primary-color);
+}
+
+.toggle-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30px;
+  height: 30px;
+  border-bottom-left-radius: 100%;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: 0.25s;
+  z-index: 5;
+}
+
+.toggle-button.light {
+  background-color: var(--secondary-color);
+}
+
+.toggle-button.dark {
+  background-color: var(--primary-color);
+}
+
+.toggle-button.dark:hover {
+  box-shadow: 0 0 0 4px rgba(198, 197, 198, 0.5);
+}
+
+.toggle-button.light:hover {
+  box-shadow: 0 0 0 4px rgba(9, 10, 9, 0.5);
+}
+
+.bg_effect{
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  opacity: 0.2;
+  z-index: 1;
+  background: url('assets/img/noiseTexture.png');
+  background-position: center;
+  background-size: contain;
+}
+
+.wrapper{
+  height: 100%;
+  width: 100%;
+  z-index: 2;
+  padding: 1rem;
+  display: grid;
+  place-items: center;
 }
