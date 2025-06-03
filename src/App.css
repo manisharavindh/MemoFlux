@@ -45,15 +45,14 @@
 
 .toggle-button {
   position: absolute;
-  top: 0;
-  right: 0;
+  bottom: 0;
+  left: 0;
   width: 30px;
   height: 30px;
-  border-bottom-left-radius: 100%;
+  border-top-right-radius: 100%;
   cursor: pointer;
   border: none;
   outline: none;
-  transition: 0.25s;
   z-index: 5;
   opacity: 0.8;
 }
@@ -92,7 +91,6 @@
 }
 
 .nav{
-  white-space: pre;
   margin-bottom: 1rem;
   font-size: 2.25rem;
 }
@@ -105,28 +103,36 @@
   text-decoration: underline;
 }
 .content{
-  height: 95%;
+  height: 93%;
   width: 100%;
   overflow-y: scroll;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* mobile media */
 @media screen and (max-width: 600px) {
   .toggle-button{
-    width: 17px;
-    height: 17px;
+    width: 20px;
+    height: 20px;
   }
 
   .wrapper{
     padding: 0.5rem;
+    padding-top: 0.5rem;
   }
 
   .nav{
-    font-size: 1.75rem;
+    text-align: center;
+    font-size: 1.5rem;
   }
   .nav .title span{
-    font-size: 1.5rem;
+    font-size: 1.25rem;
+  }
+  .content{
+    height: 94%;
+    font-size: 0.8rem;
+    text-decoration: underline;
   }
 }
