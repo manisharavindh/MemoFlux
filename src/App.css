@@ -7,22 +7,40 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  text-transform: lowercase;
+}
+
+@font-face {
+  font-family: 'MesloLGS NF';
+  src: url('assets/fonts/MesloLGS\ NF\ Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MesloLGS NF';
+  src: url('assets/fonts/MesloLGS\ NF\ Regular.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
 }
 
 .App{
   height: 100vh;
   width: 100vw;
   overflow: hidden;
+  font-family: 'MesloLGS NF', monospace;
 }
-
 .App.light {
   background-color: var(--primary-color);
   color: var(--secondary-color);
+  border-color: var(--secondary-color);
 }
-
 .App.dark {
   background-color: var(--secondary-color);
   color: var(--primary-color);
+  border-color: var(--primary-color);
 }
 
 .toggle-button {
@@ -37,20 +55,17 @@
   outline: none;
   transition: 0.25s;
   z-index: 5;
+  opacity: 0.8;
 }
-
 .toggle-button.light {
   background-color: var(--secondary-color);
 }
-
 .toggle-button.dark {
   background-color: var(--primary-color);
 }
-
 .toggle-button.dark:hover {
   box-shadow: 0 0 0 4px rgba(198, 197, 198, 0.5);
 }
-
 .toggle-button.light:hover {
   box-shadow: 0 0 0 4px rgba(9, 10, 9, 0.5);
 }
@@ -68,12 +83,50 @@
   background-position: center;
   background-size: contain;
 }
-
 .wrapper{
   height: 100%;
   width: 100%;
   z-index: 2;
   padding: 1rem;
+  padding-top: 0.5rem;
+}
+
+.nav{
+  white-space: pre;
+  margin-bottom: 1rem;
+  font-size: 2.25rem;
+}
+.nav .title span{
+  padding: 0 0.1rem;
+  cursor: pointer;
+  font-size: 2rem;
+}
+.nav .title span:hover{
+  text-decoration: underline;
+}
+.content{
+  height: 95%;
+  width: 100%;
+  overflow-y: scroll;
   display: grid;
   place-items: center;
+}
+
+/* mobile media */
+@media screen and (max-width: 600px) {
+  .toggle-button{
+    width: 17px;
+    height: 17px;
+  }
+
+  .wrapper{
+    padding: 0.5rem;
+  }
+
+  .nav{
+    font-size: 1.75rem;
+  }
+  .nav .title span{
+    font-size: 1.5rem;
+  }
 }
