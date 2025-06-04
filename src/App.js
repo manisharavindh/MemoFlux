@@ -1,15 +1,11 @@
 import './App.css';
 import { useState, useEffect } from 'react';
-import { Plus, Search, X, Home, Link, MoreHorizontal, CheckSquare } from 'lucide-react';
+import { Plus, Search, X, Home, Link, MoreHorizontal, CheckSquare, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const [isDark, setIsDark] = useState(() => {
-    const savedTheme = localStorage?.getItem('isDark');
-    return savedTheme !== null ? JSON.parse(savedTheme) : true;
-  });
-  
-  const [currentView, setCurrentView] = useState('home');
+  const [isDark, setIsDark] = useState(true);
+  const [currentView, setCurrentView] = useState('MemoFlux');
   const [linkGroups, setLinkGroups] = useState({
     'links': []
   });
@@ -18,6 +14,8 @@ function App() {
   const [newLink, setNewLink] = useState({ name: '', url: '', group: 'links' });
   const [newGroupName, setNewGroupName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sidebarMinimized, setSidebarMinimized] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -25,12 +23,6 @@ function App() {
     }, 2000);
     return () => clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('isDark', JSON.stringify(isDark));
-    }
-  }, [isDark]);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -83,6 +75,11 @@ function App() {
     }
   };
 
+  const handleNavClick = (view) => {
+    setCurrentView(view);
+    setMobileMenuOpen(false);
+  };
+
   const removeLink = (groupName, linkId) => {
     setLinkGroups(prev => ({
       ...prev,
@@ -104,45 +101,104 @@ function App() {
   return (
     <div className={`App ${isDark ? 'dark' : 'light'}`}>
       <div className="bg_effect"></div>
-      <div className="wrapper">
+      
+      {/* Mobile Menu Button */}
+      <button 
+        className="mobile-menu-btn"
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+      >
+        <Menu size={20} />
+      </button>
+      
+      {/* Sidebar */}
+      <div className={`sidebar ${sidebarMinimized ? 'minimized' : ''} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+        <div className="sidebar-header">
+          <div className="logo">
+            {!sidebarMinimized && <span>MemoFlux</span>}
+          </div>
+          <button 
+            className="minimize-btn desktop-only"
+            onClick={() => setSidebarMinimized(!sidebarMinimized)}
+          >
+            {sidebarMinimized ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+          <button 
+            className="close-btn mobile-only"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <X size={16} />
+          </button>
+        </div>
+        
+        <nav className="sidebar-nav">
+          <div 
+            className={`nav-item ${currentView === 'MemoFlux' ? 'active' : ''}`} 
+            onClick={() => handleNavClick('MemoFlux')}
+          >
+            <Home size={16} />
+            {!sidebarMinimized && <span>Home</span>}
+          </div>
+          
+          <div 
+            className={`nav-item ${currentView === 'links' ? 'active' : ''}`} 
+            onClick={() => handleNavClick('links')}
+          >
+            <Link size={16} />
+            {!sidebarMinimized && <span>links</span>}
+          </div>
+          
+          {Object.keys(linkGroups).filter(group => group !== 'links').map(group => (
+            <div 
+              key={group} 
+              className={`nav-item ${currentView === group ? 'active' : ''}`} 
+              onClick={() => handleNavClick(group)}
+            >
+              <MoreHorizontal size={16} />
+              {!sidebarMinimized && <span>{group}</span>}
+            </div>
+          ))}
+          
+          <div 
+            className="nav-item" 
+            onClick={() => setShowAddGroupModal(true)}
+          >
+            <Plus size={16} />
+            {!sidebarMinimized && <span>add group</span>}
+          </div>
+          
+          <div 
+            className={`nav-item ${currentView === 'todo' ? 'active' : ''}`} 
+            onClick={() => handleNavClick('todo')}
+          >
+            <CheckSquare size={16} />
+            {!sidebarMinimized && <span>todo</span>}
+          </div>
+        </nav>
+      </div>
+      
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && <div className="mobile-overlay" onClick={() => setMobileMenuOpen(false)}></div>}
+      
+      <div className={`wrapper ${sidebarMinimized ? 'sidebar-minimized' : ''}`}>
         <button
           onClick={toggleTheme}
           className={`toggle-button ${isDark ? 'dark' : 'light'}`}
         ></button>
         
-        {/* Navigation */}
-        <div className="nav">
-          <div className='title'>
-            [<span className='logo' onClick={() => setCurrentView('home')}>memoflux</span>]
-            [<span className={`nav-item ${currentView === 'home' ? 'active' : ''}`} onClick={() => setCurrentView('home')}>
-              <Home size={16} style={{ display: 'inline', marginRight: '4px' }} />home
-            </span>]
-            [<span className={`nav-item ${currentView === 'links' ? 'active' : ''}`} onClick={() => setCurrentView('links')}>
-              <Link size={16} style={{ display: 'inline', marginRight: '4px' }} />links
-            </span>]
-            {Object.keys(linkGroups).filter(group => group !== 'links').map(group => (
-              <span key={group} className={`nav-item ${currentView === group ? 'active' : ''}`} onClick={() => setCurrentView(group)}>
-                [{group}]
-              </span>
-            ))}
-            [<span className='nav-item' onClick={() => setShowAddGroupModal(true)}>
-              <MoreHorizontal size={16} style={{ display: 'inline', marginRight: '4px' }} />more
-            </span>]
-            [<span className={`nav-item ${currentView === 'todo' ? 'active' : ''}`} onClick={() => setCurrentView('todo')}>
-              <CheckSquare size={16} style={{ display: 'inline', marginRight: '4px' }} />todo
-            </span>]
-          </div>
+        {/* Main Header */}
+        <div className="main-header">
+          <h1>{currentView}</h1>
         </div>
 
-        {/* Content */}
-        <div className="content">
-          {currentView === 'home' && (
+        {/* Main Content Container */}
+        <div className="main-content">
+          {currentView === 'MemoFlux' && (
             <div className="home-view">
               <div className="search-section">
                 <div className="search-bar">
                   <input
                     type="text"
-                    placeholder="search google..."
+                    placeholder="Search with Google or enter address"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleGoogleSearch()}
@@ -154,9 +210,9 @@ function App() {
               </div>
               
               <div className="quick-links">
-                <h3>quick links</h3>
+                {/* <h3>quick links</h3> */}
                 <div className="links-grid home-grid">
-                  {Object.values(linkGroups).flat().slice(0, 14).map((link, index) => (
+                  {Object.values(linkGroups).flat().map((link) => (
                     <div key={link.id} className="link-item" onClick={() => window.open(link.url, '_blank')}>
                       <div className="link-icon">
                         {link.favicon ? (
@@ -173,21 +229,18 @@ function App() {
                     </div>
                   ))}
                   
-                  {/* Fill remaining slots with add buttons */}
-                  {Array.from({ length: Math.max(0, 14 - Object.values(linkGroups).flat().length) }).map((_, index) => (
-                    <div key={`empty-${index}`} className="link-item add-link" onClick={() => setShowAddLinkModal(true)}>
-                      <div className="link-icon">
-                        <Plus size={16} />
-                      </div>
-                      <span className="link-name">add link</span>
+                  <div className="link-item add-link" onClick={() => setShowAddLinkModal(true)}>
+                    <div className="link-icon">
+                      <Plus size={16} />
                     </div>
-                  ))}
+                    <span className="link-name">add link</span>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {currentView !== 'home' && currentView !== 'todo' && (
+          {currentView !== 'MemoFlux' && currentView !== 'todo' && (
             <div className="links-view">
               <div className="section-header">
                 <h2>{currentView}</h2>
