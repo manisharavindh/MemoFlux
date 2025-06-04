@@ -3,47 +3,26 @@
   --secondary-color: #090A09;
 }
 
-*{
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   text-transform: lowercase;
 }
 
-@font-face {
-  font-family: 'MesloLGS NF';
-  src: url('assets/fonts/MesloLGS\ NF\ Regular.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'MesloLGS NF';
-  src: url('assets/fonts/MesloLGS\ NF\ Regular.ttf') format('truetype');
-  font-weight: bold;
-  font-style: normal;
-  font-display: swap;
-}
-
-html, body {
-  height: 100%;
-  width: 100%;
-  overflow-x: hidden;
-  text-transform: lowercase;
-}
-
-.App{
+.App {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
   font-family: 'MesloLGS NF', monospace;
 }
+
 .App.light {
   background-color: var(--primary-color);
   color: var(--secondary-color);
   border-color: var(--secondary-color);
 }
+
 .App.dark {
   background-color: var(--secondary-color);
   color: var(--primary-color);
@@ -61,82 +40,486 @@ html, body {
   border: none;
   outline: none;
   opacity: 0.9;
+  z-index: 100;
 }
+
 .toggle-button.light {
   background-color: var(--secondary-color);
 }
+
 .toggle-button.dark {
   background-color: var(--primary-color);
 }
+
 .toggle-button.dark:hover {
   box-shadow: 0 0 0 4px rgba(198, 197, 198, 0.5);
 }
+
 .toggle-button.light:hover {
   box-shadow: 0 0 0 4px rgba(9, 10, 9, 0.5);
 }
 
-.bg_effect{
+.bg_effect {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><filter id="noise"><feTurbulence baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/></filter></defs><rect width="100%" height="100%" filter="url(%23noise)" opacity="0.15"/></svg>');
   pointer-events: none;
-  opacity: 0.15;
   z-index: 1;
-  background: url('assets/img/noiseTexture.png');
-  background-position: center;
-  background-size: contain;
 }
-.wrapper{
+
+.wrapper {
   height: 100%;
   width: 100%;
   position: relative;
   padding: 0.5rem;
+  z-index: 2;
 }
 
-.nav{
+.nav {
   margin-bottom: 1rem;
   font-size: 2.25rem;
 }
-.nav .title span{
+
+.nav .title span {
   padding: 0 0.1rem;
   cursor: pointer;
   font-size: 2rem;
+  display: inline-flex;
+  align-items: center;
 }
-.nav .title span:hover{
+
+.nav .title span:hover {
   text-decoration: underline;
 }
-.content{
+
+.nav-item.active {
+  text-decoration: underline;
+}
+
+.content {
   height: 93%;
   width: 100%;
-  overflow-y: scroll;
+  overflow-y: auto;
+  padding: 1rem 0;
+}
+
+.home-view {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.search-section {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.search-bar {
+  display: flex;
+  max-width: 500px;
+  margin: 0 auto;
+  border: 2px solid currentColor;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.search-bar input::placeholder {
+  color: currentColor;
+  opacity: 0.6;
+}
+
+.search-bar button {
+  padding: 0.75rem;
+  border: none;
+  background: currentColor;
+  color: var(--primary-color);
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* mobile media */
+.App.dark .search-bar button {
+  color: var(--secondary-color);
+}
+
+.quick-links h3 {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.home-grid {
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+
+.link-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  border: 2px solid currentColor;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  min-height: 100px;
+}
+
+.link-item:hover {
+  background: currentColor;
+  color: var(--primary-color);
+}
+
+.App.dark .link-item:hover {
+  color: var(--secondary-color);
+}
+
+.link-item.add-link {
+  border-style: dashed;
+  opacity: 0.7;
+}
+
+.link-icon {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.link-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.link-initial {
+  width: 100%;
+  height: 100%;
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.link-name {
+  text-align: center;
+  font-size: 0.9rem;
+  word-break: break-word;
+}
+
+.links-view {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.section-header h2 {
+  font-size: 2rem;
+}
+
+.add-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 2px solid currentColor;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.add-btn:hover {
+  background: currentColor;
+  color: var(--primary-color);
+}
+
+.App.dark .add-btn:hover {
+  color: var(--secondary-color);
+}
+
+.remove-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  background: var(--primary-color);
+  color: var(--secondary-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.App.dark .remove-btn {
+  background: var(--secondary-color);
+  color: var(--primary-color);
+}
+
+.link-item:hover .remove-btn {
+  opacity: 1;
+}
+
+.link-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.todo-view {
+  text-align: center;
+  padding: 2rem;
+}
+
+.todo-view h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--primary-color);
+  color: var(--secondary-color);
+  border: 2px solid var(--secondary-color);
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  overflow: hidden;
+}
+
+.App.dark .modal {
+  background: var(--secondary-color);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 2px solid currentColor;
+}
+
+.modal-header h3 {
+  font-size: 1.25rem;
+}
+
+.modal-header button {
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-body input,
+.modal-body select {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 2px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 1rem;
+  border-radius: 4px;
+}
+
+.modal-body input::placeholder {
+  color: currentColor;
+  opacity: 0.6;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid currentColor;
+  background: currentColor;
+  color: var(--primary-color);
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.App.dark .submit-btn {
+  color: var(--secondary-color);
+}
+
+.submit-btn:hover {
+  opacity: 0.9;
+}
+
 @media screen and (max-width: 600px) {
-  .toggle-button{
+  .toggle-button {
     width: 20px;
     height: 20px;
   }
 
-  .wrapper{
+  .wrapper {
     padding: 0.4rem;
   }
 
-  .nav{
+  .nav {
     text-align: center;
     font-size: 1.5rem;
   }
-  .nav .title span{
+
+  .nav .title span {
     font-size: 1.25rem;
   }
-  .content{
+
+  .content {
     height: 94%;
     font-size: 0.8rem;
-    text-decoration: underline;
+  }
+
+  .home-grid {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+  }
+
+  .links-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .section-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .modal {
+    width: 95%;
+  }
+}
+
+.loading-screen {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'MesloLGS NF', monospace;
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-screen.dark {
+  background-color: #090A09;
+  color: #C6C5C6;
+}
+
+.loading-screen.light {
+  background-color: #C6C5C6;
+  color: #090A09;
+}
+
+.loading-screen::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><filter id="noise"><feTurbulence baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/></filter></defs><rect width="100%" height="100%" filter="url(%23noise)" opacity="0.15"/></svg>');
+  pointer-events: none;
+  z-index: 1;
+}
+
+.loading-content {
+  text-align: center;
+  z-index: 2;
+  position: relative;
+}
+
+.loading-logo {
+  font-size: 3rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+  text-transform: lowercase;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid transparent;
+  border-top: 3px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media screen and (max-width: 600px) {
+  .loading-logo {
+    font-size: 2rem;
   }
 }
