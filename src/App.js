@@ -1,6 +1,6 @@
 import './App.css';
 import { useState, useEffect } from 'react';
-import { Plus, Search, X, Home, Link, MoreHorizontal, CheckSquare, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, X, Home, Link, MoreHorizontal, CheckSquare, Menu, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -14,7 +14,7 @@ function App() {
   const [newLink, setNewLink] = useState({ name: '', url: '', group: 'links' });
   const [newGroupName, setNewGroupName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sidebarMinimized, setSidebarMinimized] = useState(false);
+  const [sidebarMinimized, setSidebarMinimized] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -90,10 +90,7 @@ function App() {
   if (isLoading) {
     return (
       <div className={`loading-screen ${isDark ? 'dark' : 'light'}`}>
-        <div className="loading-content">
-          <div className="loading-logo">memoflux</div>
-          <div className="loading-spinner"></div>
-        </div>
+          <div className="loading-logo glow-text">MemoFlux</div>
       </div>
     );
   }
@@ -114,7 +111,7 @@ function App() {
       <div className={`sidebar ${sidebarMinimized ? 'minimized' : ''} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <div className="logo">
-            {!sidebarMinimized && <span>MemoFlux</span>}
+            {!sidebarMinimized && <span>HELLOWORLD</span>}
           </div>
           <button 
             className="minimize-btn desktop-only"
@@ -173,6 +170,13 @@ function App() {
             <CheckSquare size={16} />
             {!sidebarMinimized && <span>todo</span>}
           </div>
+          <div 
+            onClick={toggleTheme}
+            className={`nav-item dl-toggle ${isDark ? 'dark' : 'light'}`}
+          >
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
+            {!sidebarMinimized && <span>{isDark ? 'Light' : 'Dark'}</span>}
+          </div>
         </nav>
       </div>
       
@@ -180,10 +184,6 @@ function App() {
       {mobileMenuOpen && <div className="mobile-overlay" onClick={() => setMobileMenuOpen(false)}></div>}
       
       <div className={`wrapper ${sidebarMinimized ? 'sidebar-minimized' : ''}`}>
-        <button
-          onClick={toggleTheme}
-          className={`toggle-button ${isDark ? 'dark' : 'light'}`}
-        ></button>
         
         {/* Main Header */}
         <div className="main-header">
@@ -196,6 +196,10 @@ function App() {
             <div className="home-view">
               <div className="search-section">
                 <div className="search-bar">
+                  <button onClick={handleGoogleSearch}>
+                    {/* <Search size={16} /> */}
+                    <img src="https://static.dezeen.com/uploads/2025/05/sq-google-g-logo-update_dezeen_2364_col_0.jpg" alt="" />
+                  </button>
                   <input
                     type="text"
                     placeholder="Search with Google or enter address"
@@ -203,37 +207,36 @@ function App() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleGoogleSearch()}
                   />
-                  <button onClick={handleGoogleSearch}>
-                    <Search size={16} />
-                  </button>
                 </div>
               </div>
               
               <div className="quick-links">
                 {/* <h3>quick links</h3> */}
-                <div className="links-grid home-grid">
-                  {Object.values(linkGroups).flat().map((link) => (
-                    <div key={link.id} className="link-item" onClick={() => window.open(link.url, '_blank')}>
-                      <div className="link-icon">
-                        {link.favicon ? (
-                          <img src={link.favicon} alt="" onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }} />
-                        ) : null}
-                        <div className="link-initial" style={{ display: link.favicon ? 'none' : 'flex' }}>
-                          {getInitial(link.name)}
+                <div className="lh-grid">
+                  <div className="links-grid home-grid">
+                    {Object.values(linkGroups).flat().map((link) => (
+                      <div key={link.id} className="link-item" onClick={() => window.open(link.url, '_blank')}>
+                        <div className="link-icon">
+                          {link.favicon ? (
+                            <img src={link.favicon} alt="" onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }} />
+                          ) : null}
+                          <div className="link-initial" style={{ display: link.favicon ? 'none' : 'flex' }}>
+                            {getInitial(link.name)}
+                          </div>
                         </div>
+                        <span className="link-name">{link.name}</span>
                       </div>
-                      <span className="link-name">{link.name}</span>
+                    ))}
+                    
+                    <div className="link-item add-link" onClick={() => setShowAddLinkModal(true)}>
+                      <div className="link-icon">
+                        <Plus size={16} />
+                      </div>
+                      <span className="link-name">add link</span>
                     </div>
-                  ))}
-                  
-                  <div className="link-item add-link" onClick={() => setShowAddLinkModal(true)}>
-                    <div className="link-icon">
-                      <Plus size={16} />
-                    </div>
-                    <span className="link-name">add link</span>
                   </div>
                 </div>
               </div>
