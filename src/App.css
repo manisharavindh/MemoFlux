@@ -16,7 +16,7 @@
   --primary-light: #F9F9FB;
   --color-light: #1C1B22;
 
-
+  --red: #F95657;
 }
 
 * {
@@ -233,6 +233,7 @@
 
 .main-header {
   padding: 2rem;
+  padding-top: 6rem;
   text-align: center;
   border-top: 0.75rem solid var(--dash-bg-dark);
   border-right: 0.75rem solid var(--dash-bg-dark);
@@ -368,14 +369,14 @@
   justify-content: center;
   /* padding: 1.5rem; */
   backdrop-filter: blur(10px);
-  border-radius: 16px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s;
   position: relative;
   /* min-height: 140px; */
   aspect-ratio: 1;
   text-decoration: none;
-  margin-bottom: 1rem;
+  margin-bottom: 1.24rem;
 }
 
 .App.dark .link-item {
@@ -439,7 +440,7 @@
 
 .link-name {
   position: absolute;
-  bottom: -1.1rem;
+  bottom: -1rem;
   font-size: 0.7rem;
   font-weight: 500;
   text-align: center;
@@ -498,14 +499,18 @@
   color: var(--secondary-color);
 }
 
+  /* top: 50%;
+  right: -23%;
+  width: 20px;
+  height: 20px; */
+
 .remove-btn {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid currentColor;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  border: 0;
   background: var(--primary-color);
   color: var(--secondary-color);
   cursor: pointer;
@@ -516,13 +521,40 @@
   transition: all 0.2s ease;
 }
 
+.remove-btn:hover, .edit-btn:hover {
+  transform: scale(1.25);
+}
+
 .App.dark .remove-btn {
   background: var(--secondary-color);
   color: var(--primary-color);
 }
 
 .link-item:hover .remove-btn {
-  opacity: 1;
+  opacity: 0.9;
+}
+
+.edit-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  background: var(--primary-color);
+  color: var(--secondary-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s ease;
+  stroke-width: 1px;
+  font-size: 10px;
+}
+
+.link-item:hover .edit-btn {
+  opacity: 0.9;
 }
 
 .link-content {
@@ -633,12 +665,35 @@
   transition: all 0.2s ease;
 }
 
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.remove-btn-modal {
+  width: 20%;
+  padding: 0.75rem;
+  border: 0;
+  background: var(--red);
+  color: var(--secondary-dark);
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.remove-btn-modal:hover {
+  opacity: 0.8;
+}
+
 .App.dark .submit-btn {
   color: var(--color-light);
 }
 
 .submit-btn:hover {
-  opacity: 0.9;
+  opacity: 0.8;
 }
 
 @media screen and (max-width: 600px) {
@@ -838,5 +893,72 @@
 @media screen and (max-width: 600px) {
   .loading-logo {
     font-size: 2rem;
+  }
+}
+
+
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.header-logo {
+  width: 54px;
+  height: 52.5px;
+  border-radius: 8px;
+  transform: scale(1.2);
+}
+
+
+
+.links-grid.home-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* Default: 4 columns */
+  gap: 16px;
+}
+
+/* Tablet and larger screens */
+@media (min-width: 768px) {
+  .links-grid.home-grid {
+    grid-template-columns: repeat(6, 1fr); /* 6 columns on tablets */
+  }
+}
+
+/* Desktop screens */
+@media (min-width: 1024px) {
+  .links-grid.home-grid {
+    grid-template-columns: repeat(8, 1fr); /* 8 columns on desktop */
+  }
+}
+
+/* Large desktop screens */
+@media (min-width: 1440px) {
+  .links-grid.home-grid {
+    grid-template-columns: repeat(10, 1fr); /* 10 columns on large screens */
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .home-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .header-content {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .header-logo {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .home-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
