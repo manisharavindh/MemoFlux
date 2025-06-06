@@ -63,10 +63,26 @@ function App() {
     try {
       const domain = new URL(url).hostname;
       const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-      if (faviconUrl === 'https://www.google.com/s2/favicons?domain=as&sz=32') {
+      
+      // Return null if the URL is not valid or domain is empty
+      if (!domain) {
         return null;
       }
-      return faviconUrl;
+
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = function() {
+          // Check if the image is the default favicon by comparing dimensions
+          // Google's default favicon is typically 16x16
+          if (this.width === 16 && this.height === 16) {
+            resolve(null);
+          } else {
+            resolve(faviconUrl);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = faviconUrl;
+      });
     } catch {
       return null;
     }
@@ -79,15 +95,20 @@ function App() {
   const addLink = useCallback(() => {
     if (newLink.name && newLink.url) {
       const fullUrl = newLink.url.startsWith('http') ? newLink.url : `https://${newLink.url}`;
-      setLinkGroups(prev => ({
-        ...prev,
-        [newLink.group]: [...(prev[newLink.group] || []), {
-          id: Date.now(),
-          name: newLink.name,
-          url: fullUrl,
-          favicon: getFavicon(fullUrl)
-        }]
-      }));
+      
+      // Make getFavicon async
+      getFavicon(fullUrl).then(faviconUrl => {
+        setLinkGroups(prev => ({
+          ...prev,
+          [newLink.group]: [...(prev[newLink.group] || []), {
+            id: Date.now(),
+            name: newLink.name,
+            url: fullUrl,
+            favicon: faviconUrl
+          }]
+        }));
+      });
+      
       setNewLink({ name: '', url: '', group: 'links' });
       setShowAddLinkModal(false);
     }
@@ -110,12 +131,17 @@ function App() {
   const addHomeLink = useCallback(() => {
     if (newLink.name && newLink.url) {
       const fullUrl = newLink.url.startsWith('http') ? newLink.url : `https://${newLink.url}`;
-      setHomeLinks(prev => [...prev, {
-        id: Date.now(),
-        name: newLink.name,
-        url: fullUrl,
-        favicon: getFavicon(fullUrl)
-      }]);
+      
+      // Make getFavicon async
+      getFavicon(fullUrl).then(faviconUrl => {
+        setHomeLinks(prev => [...prev, {
+          id: Date.now(),
+          name: newLink.name,
+          url: fullUrl,
+          favicon: faviconUrl
+        }]);
+      });
+      
       setNewLink({ name: '', url: '', group: 'links' });
       setShowAddLinkModal(false);
     }
@@ -130,29 +156,33 @@ function App() {
   const updateLink = useCallback(() => {
     if (newLink.name && newLink.url && editingLink) {
       const fullUrl = newLink.url.startsWith('http') ? newLink.url : `https://${newLink.url}`;
-      const updatedLink = {
-        ...editingLink,
-        name: newLink.name,
-        url: fullUrl,
-        favicon: getFavicon(fullUrl)
-      };
+      
+      // Make getFavicon async
+      getFavicon(fullUrl).then(faviconUrl => {
+        const updatedLink = {
+          ...editingLink,
+          name: newLink.name,
+          url: fullUrl,
+          favicon: faviconUrl
+        };
 
-      if (editingLink.isHome) {
-        setHomeLinks(prev => prev.map(link => 
-          link.id === editingLink.id ? updatedLink : link
-        ));
-      } else {
-        setLinkGroups(prev => ({
-          ...prev,
-          [editingLink.group]: prev[editingLink.group].map(link => 
+        if (editingLink.isHome) {
+          setHomeLinks(prev => prev.map(link => 
             link.id === editingLink.id ? updatedLink : link
-          )
-        }));
-      }
+          ));
+        } else {
+          setLinkGroups(prev => ({
+            ...prev,
+            [editingLink.group]: prev[editingLink.group].map(link => 
+              link.id === editingLink.id ? updatedLink : link
+            )
+          }));
+        }
 
-      setNewLink({ name: '', url: '', group: 'links' });
-      setShowEditLinkModal(false);
-      setEditingLink(null);
+        setNewLink({ name: '', url: '', group: 'links' });
+        setShowEditLinkModal(false);
+        setEditingLink(null);
+      });
     }
   }, [newLink, editingLink, getFavicon]);
 
@@ -523,6 +553,17 @@ function App() {
 
 // Memoized LinkItem component to prevent unnecessary re-renders
 const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
+  const [initialBgColor] = React.useState(() => {
+    const colors = [
+      'var(--initial-color-1)',
+      'var(--initial-color-2)',
+      'var(--initial-color-3)',
+      'var(--initial-color-4)',
+      'var(--initial-color-5)',
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+  });
+
   const handleImageError = useCallback((e) => {
     e.target.style.display = 'none';
     e.target.nextSibling.style.display = 'flex';
@@ -555,7 +596,7 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
               height="32"
             />
           ) : null}
-          <div className="link-initial" style={{ display: link.favicon ? 'none' : 'flex' }}>
+          <div className="link-initial" style={{ display: link.favicon ? 'none' : 'flex', background: initialBgColor }}>
             {getInitial(link.name)}
           </div>
         </div>
