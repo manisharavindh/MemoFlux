@@ -1,10 +1,10 @@
 import './App.css';
 import logo from './assets/img/memoflux_logo.png';
-import { useState, useEffect } from 'react';
-import { Plus, X, Home, Link, MoreHorizontal, CheckSquare, Menu, ChevronLeft, ChevronRight, Sun, Moon, Settings} from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Plus, X, Home, Link, CheckSquare, Menu, Sun, Moon, Settings} from 'lucide-react';
 
 function App() {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isDark, setIsDark] = useState(true);
   const [currentView, setCurrentView] = useState('MemoFlux');
   const [linkGroups, setLinkGroups] = useState({
@@ -19,24 +19,24 @@ function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showEditLinkModal, setShowEditLinkModal] = useState(false);
   const [editingLink, setEditingLink] = useState(null);
-  const [homeLinks, setHomeLinks] = useState([]); // Separate array for home page links
+  const [homeLinks, setHomeLinks] = useState([]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2000);
+    }, 1000);
     return () => clearTimeout(timer);
   }, []);
 
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-  };
+  const toggleTheme = useCallback(() => {
+    setIsDark(prev => !prev);
+  }, []);
 
-  const getFavicon = (url) => {
+  // Memoize favicon function to prevent recreating it on every render
+  const getFavicon = useCallback((url) => {
     try {
       const domain = new URL(url).hostname;
       const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-      // Check if it's the default Google favicon URL pattern that indicates no favicon
       if (faviconUrl === 'https://www.google.com/s2/favicons?domain=as&sz=32') {
         return null;
       }
@@ -44,40 +44,44 @@ function App() {
     } catch {
       return null;
     }
-  };
+  }, []);
 
-  const getInitial = (name) => {
+  const getInitial = useCallback((name) => {
     return name.charAt(0).toUpperCase();
-  };
+  }, []);
 
-  const addLink = () => {
+  const addLink = useCallback(() => {
     if (newLink.name && newLink.url) {
+      const fullUrl = newLink.url.startsWith('http') ? newLink.url : `https://${newLink.url}`;
       setLinkGroups(prev => ({
         ...prev,
         [newLink.group]: [...(prev[newLink.group] || []), {
           id: Date.now(),
           name: newLink.name,
-          url: newLink.url.startsWith('http') ? newLink.url : `https://${newLink.url}`,
-          favicon: getFavicon(newLink.url.startsWith('http') ? newLink.url : `https://${newLink.url}`)
+          url: fullUrl,
+          favicon: getFavicon(fullUrl)
         }]
       }));
       setNewLink({ name: '', url: '', group: 'links' });
       setShowAddLinkModal(false);
     }
-  };
+  }, [newLink, getFavicon]);
 
-  const addGroup = () => {
-    if (newGroupName && !linkGroups[newGroupName.toLowerCase()]) {
+  const addGroup = useCallback(() => {
+    const trimmedName = newGroupName.trim();
+    const lowercaseName = trimmedName.toLowerCase();
+    
+    if (trimmedName && !linkGroups[lowercaseName]) {
       setLinkGroups(prev => ({
         ...prev,
-        [newGroupName.toLowerCase()]: []
+        [lowercaseName]: []
       }));
       setNewGroupName('');
       setShowAddGroupModal(false);
     }
-  };
+  }, [newGroupName, linkGroups]);
 
-  const addHomeLink = () => {
+  const addHomeLink = useCallback(() => {
     if (newLink.name && newLink.url) {
       const fullUrl = newLink.url.startsWith('http') ? newLink.url : `https://${newLink.url}`;
       setHomeLinks(prev => [...prev, {
@@ -89,15 +93,15 @@ function App() {
       setNewLink({ name: '', url: '', group: 'links' });
       setShowAddLinkModal(false);
     }
-  };
+  }, [newLink, getFavicon]);
 
-  const editLink = (link, isHome = false) => {
+  const editLink = useCallback((link, isHome = false) => {
     setEditingLink({ ...link, isHome });
     setNewLink({ name: link.name, url: link.url, group: 'links' });
     setShowEditLinkModal(true);
-  };
+  }, []);
 
-  const updateLink = () => {
+  const updateLink = useCallback(() => {
     if (newLink.name && newLink.url && editingLink) {
       const fullUrl = newLink.url.startsWith('http') ? newLink.url : `https://${newLink.url}`;
       const updatedLink = {
@@ -124,32 +128,32 @@ function App() {
       setShowEditLinkModal(false);
       setEditingLink(null);
     }
-  };
+  }, [newLink, editingLink, getFavicon]);
 
-  const removeHomeLink = (linkId) => {
+  const removeHomeLink = useCallback((linkId) => {
     setHomeLinks(prev => prev.filter(link => link.id !== linkId));
-  };
+  }, []);
 
-  const handleGoogleSearch = () => {
+  const handleGoogleSearch = useCallback(() => {
     if (searchQuery.trim()) {
       window.open(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`, '_blank');
       setSearchQuery('');
     }
-  };
+  }, [searchQuery]);
 
-  const handleNavClick = (view) => {
+  const handleNavClick = useCallback((view) => {
     setCurrentView(view);
     setMobileMenuOpen(false);
-  };
+  }, []);
 
-  const removeLink = (groupName, linkId) => {
+  const removeLink = useCallback((groupName, linkId) => {
     setLinkGroups(prev => ({
       ...prev,
       [groupName]: prev[groupName].filter(link => link.id !== linkId)
     }));
-  };
+  }, []);
 
-  const removeCurrentLink = () => {
+  const removeCurrentLink = useCallback(() => {
     if (editingLink) {
       if (editingLink.isHome) {
         setHomeLinks(prev => prev.filter(link => link.id !== editingLink.id));
@@ -164,8 +168,39 @@ function App() {
       setShowEditLinkModal(false);
       setEditingLink(null);
     }
-  };
+  }, [editingLink]);
 
+  // Memoize filtered link groups to prevent recalculation
+  const filteredLinkGroups = useMemo(() => 
+    Object.keys(linkGroups).filter(group => group !== 'links'),
+    [linkGroups]
+  );
+
+  // Memoize empty slots calculation
+  const emptySlots = useMemo(() => 
+    Math.max(0, 40 - homeLinks.length),
+    [homeLinks.length]
+  );
+
+  // Memoize current group links
+  const currentGroupLinks = useMemo(() => 
+    linkGroups[currentView] || [],
+    [linkGroups, currentView]
+  );
+
+  // Add keyboard handling for modals
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        if (showAddLinkModal) setShowAddLinkModal(false);
+        if (showAddGroupModal) setShowAddGroupModal(false);
+        if (showEditLinkModal) setShowEditLinkModal(false);
+      }
+    };
+    
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showAddLinkModal, showAddGroupModal, showEditLinkModal]);
 
   if (isLoading) {
     return (
@@ -189,15 +224,20 @@ function App() {
       
       {/* Sidebar */}
       <div className={`sidebar ${sidebarMinimized ? 'minimized' : ''} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-        <div className="sidebar-header">
+        {/* <div className="sidebar-header">
           <div className="logo">
-            {!sidebarMinimized && <span>HELLOWORLD</span>}
+            {!sidebarMinimized && (
+              <>
+                <img src={logo} alt="MemoFlux" className="sidebar-logo" />
+                <span className="logo-text">MemoFlux</span>
+              </>
+            )}
           </div>
           <button 
-            className="minimize-btn desktop-only"
+            className="close-menu-btn desktop-only"
             onClick={() => setSidebarMinimized(!sidebarMinimized)}
           >
-            {sidebarMinimized ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            <X size={20} />
           </button>
           <button 
             className="close-btn mobile-only"
@@ -205,7 +245,7 @@ function App() {
           >
             <X size={16} />
           </button>
-        </div>
+        </div> */}
         
         <nav className="sidebar-nav">
           <div 
@@ -224,13 +264,13 @@ function App() {
             {!sidebarMinimized && <span>links</span>}
           </div>
           
-          {Object.keys(linkGroups).filter(group => group !== 'links').map(group => (
+          {filteredLinkGroups.map(group => (
             <div 
               key={group} 
               className={`nav-item ${currentView === group ? 'active' : ''}`} 
               onClick={() => handleNavClick(group)}
             >
-              <MoreHorizontal size={16} />
+              <Link size={16} />
               {!sidebarMinimized && <span>{group}</span>}
             </div>
           ))}
@@ -264,6 +304,13 @@ function App() {
       {mobileMenuOpen && <div className="mobile-overlay" onClick={() => setMobileMenuOpen(false)}></div>}
       
       <div className={`wrapper ${sidebarMinimized ? 'sidebar-minimized' : ''}`}>
+
+      <button 
+          className="minimize-btn desktop-only"
+          onClick={() => setSidebarMinimized(!sidebarMinimized)}
+          >
+          {sidebarMinimized ? <Menu size={20} /> : <X size={20} />}
+      </button>
         
       {/* Main Header */}
       <div className="main-header">
@@ -287,7 +334,7 @@ function App() {
                     placeholder="Search with Google or enter address"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleGoogleSearch()}
+                    onKeyDown={(e) => e.key === 'Enter' && handleGoogleSearch()}
                   />
                 </div>
               </div>
@@ -296,32 +343,17 @@ function App() {
                 <div className="lh-grid">
                   <div className="links-grid home-grid">
                     {homeLinks.map((link) => (
-                      <div key={link.id} className="link-item">
-                        <button className="edit-btn" onClick={() => editLink(link, true)}>
-                          <Settings size={8} />
-                        </button>
-                        {/* <button className="remove-btn" onClick={() => removeHomeLink(link.id)}>
-                          <X size={9} />
-                        </button> */}
-                        <div className="link-content" onClick={() => window.open(link.url, '_blank')}>
-                          <div className="link-icon">
-                            {link.favicon ? (
-                              <img src={link.favicon} alt="" onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'flex';
-                              }} />
-                            ) : null}
-                            <div className="link-initial" style={{ display: link.favicon ? 'none' : 'flex' }}>
-                              {getInitial(link.name)}
-                            </div>
-                          </div>
-                          <span className="link-name">{link.name}</span>
-                        </div>
-                      </div>
+                      <LinkItem 
+                        key={link.id}
+                        link={link}
+                        isHome={true}
+                        onEdit={() => editLink(link, true)}
+                        getInitial={getInitial}
+                      />
                     ))}
                     
-                    {/* Fill remaining slots up to 4 rows (16 items) */}
-                    {Array.from({ length: Math.max(0, 40 - homeLinks.length) }, (_, index) => (
+                    {/* Fill remaining slots up to 40 items */}
+                    {Array.from({ length: emptySlots }, (_, index) => (
                       <div key={`empty-${index}`} className="link-item add-link" onClick={() => {
                         setNewLink({ name: '', url: '', group: 'home' });
                         setShowAddLinkModal(true);
@@ -333,7 +365,7 @@ function App() {
                       </div>
                     ))}
                     
-                    {/* Show additional "add more" if all 16 slots are filled */}
+                    {/* Show additional "add more" if all 40 slots are filled */}
                     {homeLinks.length >= 40 && (
                       <div className="link-item add-link" onClick={() => {
                         setNewLink({ name: '', url: '', group: 'home' });
@@ -353,40 +385,15 @@ function App() {
 
           {currentView !== 'MemoFlux' && currentView !== 'todo' && (
             <div className="links-view">
-              {/* <div className="section-header">
-                <h2>{currentView}</h2>
-                <button className="add-btn" onClick={() => {
-                  setNewLink({ ...newLink, group: currentView });
-                  setShowAddLinkModal(true);
-                }}>
-                  <Plus size={16} /> add link
-                </button>
-              </div> */}
-              
               <div className="links-grid">
-                {(linkGroups[currentView] || []).map((link) => (
-                  <div key={link.id} className="link-item">
-                    <button className="edit-btn" onClick={() => editLink({...link, group: currentView})}>
-                      <Settings size={8} />
-                    </button>
-                    {/* <button className="remove-btn" onClick={() => removeLink(currentView, link.id)}>
-                      <X size={12} />
-                    </button> */}
-                    <div className="link-content" onClick={() => window.open(link.url, '_blank')}>
-                      <div className="link-icon">
-                        {link.favicon ? (
-                          <img src={link.favicon} alt="" onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }} />
-                        ) : null}
-                        <div className="link-initial" style={{ display: link.favicon ? 'none' : 'flex' }}>
-                          {getInitial(link.name)}
-                        </div>
-                      </div>
-                      <span className="link-name">{link.name}</span>
-                    </div>
-                  </div>
+                {currentGroupLinks.map((link) => (
+                  <LinkItem 
+                    key={link.id}
+                    link={link}
+                    isHome={false}
+                    onEdit={() => editLink({...link, group: currentView})}
+                    getInitial={getInitial}
+                  />
                 ))}
                 
                 <div className="link-item add-link" onClick={() => {
@@ -434,14 +441,6 @@ function App() {
                 value={newLink.url}
                 onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
               />
-              {/* <select
-                value={newLink.group}
-                onChange={(e) => setNewLink({ ...newLink, group: e.target.value })}
-              >
-                {Object.keys(linkGroups).map(group => (
-                  <option key={group} value={group}>{group}</option>
-                ))}
-              </select> */}
               <button className="submit-btn" onClick={newLink.group === 'home' ? addHomeLink : addLink}>
                 add link
               </button>
@@ -450,7 +449,6 @@ function App() {
         </div>
       )}
 
-      {/* Add Group Modal */}
       {/* Edit Link Modal */}
       {showEditLinkModal && (
         <div className="modal-overlay" onClick={() => setShowEditLinkModal(false)}>
@@ -486,8 +484,83 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Add Group Modal */}
+      {showAddGroupModal && (
+        <div className="modal-overlay" onClick={() => setShowAddGroupModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Add New Group</h3>
+              <button onClick={() => setShowAddGroupModal(false)}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <input
+                type="text"
+                placeholder="Group name"
+                value={newGroupName}
+                onChange={(e) => setNewGroupName(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && addGroup()}
+              />
+              <button 
+                className="submit-btn" 
+                onClick={addGroup}
+                disabled={!newGroupName.trim()}
+              >
+                Add Group
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+// Memoized LinkItem component to prevent unnecessary re-renders
+const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
+  const handleImageError = useCallback((e) => {
+    e.target.style.display = 'none';
+    e.target.nextSibling.style.display = 'flex';
+  }, []);
+
+  const handleClick = useCallback((e) => {
+    e.preventDefault();
+    window.open(link.url, '_blank', 'noopener,noreferrer');
+  }, [link.url]);
+
+  const handleEditClick = useCallback((e) => {
+    e.stopPropagation();
+    onEdit();
+  }, [onEdit]);
+
+  return (
+    <div className="link-item">
+      <button className="edit-btn" onClick={handleEditClick}>
+        <Settings size={8} />
+      </button>
+      <div className="link-content" onClick={handleClick}>
+        <div className="link-icon">
+          {link.favicon ? (
+            <img 
+              src={link.favicon} 
+              alt="" 
+              onError={handleImageError}
+              loading="lazy"
+              width="32"
+              height="32"
+            />
+          ) : null}
+          <div className="link-initial" style={{ display: link.favicon ? 'none' : 'flex' }}>
+            {getInitial(link.name)}
+          </div>
+        </div>
+        <span className="link-name">{link.name}</span>
+      </div>
+    </div>
+  );
+});
 
 export default App;
