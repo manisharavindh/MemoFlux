@@ -315,7 +315,7 @@ function App() {
             }
           }}
         >
-          {mobileMenuOpen || !sidebarMinimized ? <X size={20} /> : <Menu size={20} />}
+          {isMobile ? (mobileMenuOpen ? <X size={20} /> : <Menu size={20} />) : (!sidebarMinimized ? <X size={20} /> : <Menu size={20} />)}
         </button>
         
         <div className="main-header">
@@ -427,27 +427,31 @@ function App() {
         <div className="modal-overlay" onClick={() => setShowAddLinkModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>add new link</h3>
-              <button onClick={() => setShowAddLinkModal(false)}>
-                <X size={16} />
-              </button>
+              <h3>Add link</h3>
             </div>
             <div className="modal-body">
+              <h4>Title</h4>
               <input
                 type="text"
-                placeholder="link name"
+                placeholder="Enter a title"
                 value={newLink.name}
                 onChange={(e) => setNewLink({ ...newLink, name: e.target.value })}
               />
+              <h4>URL</h4>
               <input
                 type="text"
-                placeholder="url (with or without https://)"
+                placeholder="Type or paste a URL"
                 value={newLink.url}
                 onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
               />
-              <button className="submit-btn" onClick={newLink.group === 'home' ? addHomeLink : addLink}>
-                add link
-              </button>
+              <div className="modal-actions">
+                <button className="remove-btn-modal modal-cancel" onClick={() => setShowAddLinkModal(false)}>
+                  Cancel
+                </button>
+                <button className="submit-btn" onClick={newLink.group === 'home' ? addHomeLink : addLink}>
+                  Save
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -458,18 +462,17 @@ function App() {
         <div className="modal-overlay" onClick={() => setShowEditLinkModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>edit link</h3>
-              <button onClick={() => setShowEditLinkModal(false)}>
-                <X size={16} />
-              </button>
+              <h3>Edit Link</h3>
             </div>
             <div className="modal-body">
+              <h4>Title</h4>
               <input
                 type="text"
                 placeholder="link name"
                 value={newLink.name}
                 onChange={(e) => setNewLink({ ...newLink, name: e.target.value })}
               />
+              <h4>URL</h4>
               <input
                 type="text"
                 placeholder="url (with or without https://)"
@@ -479,6 +482,9 @@ function App() {
               <div className="modal-actions">
                 <button className="remove-btn-modal" onClick={removeCurrentLink}>
                   Delete
+                </button>
+                <button className="remove-btn-modal modal-cancel" onClick={() => setShowEditLinkModal(false)}>
+                  Cancel
                 </button>
                 <button className="submit-btn" onClick={updateLink}>
                   Save
@@ -495,26 +501,29 @@ function App() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Add New Group</h3>
-              <button onClick={() => setShowAddGroupModal(false)}>
-                <X size={16} />
-              </button>
             </div>
             <div className="modal-body">
+              <h4>Name</h4>
               <input
                 type="text"
-                placeholder="Group name"
+                placeholder="Enter a name"
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
                 autoFocus
                 onKeyDown={(e) => e.key === 'Enter' && addGroup()}
               />
-              <button 
-                className="submit-btn" 
-                onClick={addGroup}
-                disabled={!newGroupName.trim()}
-              >
-                Add Group
-              </button>
+              <div className="modal-actions">
+                <button className="remove-btn-modal modal-cancel" onClick={() => setShowAddGroupModal(false)}>
+                  Cancel
+                </button>
+                <button 
+                    className="submit-btn" 
+                    onClick={addGroup}
+                    disabled={!newGroupName.trim()}
+                  >
+                    Save
+                  </button>
+              </div>
             </div>
           </div>
         </div>
