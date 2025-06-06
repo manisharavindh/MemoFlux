@@ -156,10 +156,6 @@ function App() {
     }
   }, [newLink, editingLink, getFavicon]);
 
-  // const removeHomeLink = useCallback((linkId) => {
-  //   setHomeLinks(prev => prev.filter(link => link.id !== linkId));
-  // }, []);
-
   const handleGoogleSearch = useCallback(() => {
     if (searchQuery.trim()) {
       window.open(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`, '_blank');
@@ -171,13 +167,6 @@ function App() {
     setCurrentView(view);
     setMobileMenuOpen(false);
   }, []);
-
-  // const removeLink = useCallback((groupName, linkId) => {
-  //   setLinkGroups(prev => ({
-  //     ...prev,
-  //     [groupName]: prev[groupName].filter(link => link.id !== linkId)
-  //   }));
-  // }, []);
 
   const removeCurrentLink = useCallback(() => {
     if (editingLink) {
