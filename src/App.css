@@ -663,6 +663,7 @@
 }
 .modal-cancel{
   background: transparent;
+
 }
 .modal-body {
   padding: 1.5rem;
@@ -727,7 +728,7 @@
   opacity: 0.8;
 }
 
-.remove-btn-modal.modal-cancel {
+.modal-cancel {
   width: 20%;
   padding: 0.75rem;
   border: 0;
@@ -738,10 +739,29 @@
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.2s ease;
+  color: var(--color-dark);
 }
 
-.remove-btn-modal:hover {
+.modal-cancel:hover {
   box-shadow: 0 0 0 2px var(--border-dark);
+}
+
+@media screen and (max-width: 600px){
+  .submit-btn{
+    width: 50%;
+    font-size: 0.6rem;
+    font-weight: bolder;
+  }
+  .modal-cancel{
+    width: 50%;
+    font-size: 0.6rem;
+    font-weight: bolder;
+  }
+  .remove-btn-modal{
+    width: auto;
+    font-size: 0.6rem;
+    font-weight: bolder;
+  }
 }
 
 .App.dark .submit-btn {
@@ -867,10 +887,7 @@
 
 @media screen and (max-width: 480px) {
   .links-grid.home-grid {
-    width: 95%;
     grid-template-columns: repeat(4, 1fr);
-    gap: 0.75rem;
-    padding: 0.75rem;
   }
 
   .link-icon {
@@ -891,10 +908,6 @@
   .main-content{
     border-radius: 0 0 1rem 1rem;
     border-width: 0.5rem;
-  }
-
-  .search-section {
-    margin: 1.5rem auto;
   }
 }
 
@@ -970,6 +983,11 @@
   .header-logo {
     width: 30px;
     height: 30px;
+  }
+
+  .lh-grid{
+    padding: 0 1.5rem;
+    overflow-y: scroll;
   }
 }
 

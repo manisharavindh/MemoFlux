@@ -464,7 +464,7 @@ function App() {
                 onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
               />
               <div className="modal-actions">
-                <button className="remove-btn-modal modal-cancel" onClick={() => setShowAddLinkModal(false)}>
+                <button className="modal-cancel" onClick={() => setShowAddLinkModal(false)}>
                   Cancel
                 </button>
                 <button className="submit-btn" onClick={newLink.group === 'home' ? addHomeLink : addLink}>
@@ -502,7 +502,7 @@ function App() {
                 <button className="remove-btn-modal" onClick={removeCurrentLink}>
                   Delete
                 </button>
-                <button className="remove-btn-modal modal-cancel" onClick={() => setShowEditLinkModal(false)}>
+                <button className="modal-cancel" onClick={() => setShowEditLinkModal(false)}>
                   Cancel
                 </button>
                 <button className="submit-btn" onClick={updateLink}>
