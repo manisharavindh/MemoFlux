@@ -6,7 +6,8 @@ import logo from './assets/img/memoflux_logo.png';
 function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDark, setIsDark] = useState(true);
-  const [currentView, setCurrentView] = useState('MemoFlux');
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 600);
+  const [currentView, setCurrentView] = useState('MemoFlux'); 
   const [linkGroups, setLinkGroups] = useState({ 'links': [] });
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
@@ -203,8 +204,8 @@ function App() {
 
   // Memoize empty slots calculation
   const emptySlots = useMemo(() => 
-    Math.max(0, 40 - homeLinks.length),
-    [homeLinks.length]
+    Math.max(0, isMobile ? 16 - homeLinks.length : 40 - homeLinks.length),
+    [homeLinks.length, isMobile]
   );
 
   // Memoize current group links
@@ -227,6 +228,15 @@ function App() {
     return () => window.removeEventListener('keydown', handleEscape);
   }, [showAddLinkModal, showAddGroupModal, showEditLinkModal]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 600);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   if (isLoading) {
     return (
       <div className={`loading-screen ${isDark ? 'dark' : 'light'}`}>
@@ -238,13 +248,6 @@ function App() {
   return (
     <div className={`App ${isDark ? 'dark' : 'light'}`}>
       <div className="bg_effect"></div>
-      
-      <button 
-        className="mobile-menu-btn"
-        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-      >
-        <Menu size={20} />
-      </button>
       
       <div className={`sidebar ${sidebarMinimized ? 'minimized' : ''} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
         <nav className="sidebar-nav">
@@ -300,14 +303,19 @@ function App() {
         </nav>
       </div>
       
-      {mobileMenuOpen && <div className="mobile-overlay" onClick={() => setMobileMenuOpen(false)}></div>}
-      
-      <div className={`wrapper ${sidebarMinimized ? 'sidebar-minimized' : ''}`}>
+      <div className={`wrapper ${sidebarMinimized ? 'sidebar-minimized' : ''} ${mobileMenuOpen ? 'mobile-menu-open' : ''}`}>
         <button 
-          className="minimize-btn desktop-only"
-          onClick={() => setSidebarMinimized(!sidebarMinimized)}
+          className="minimize-btn"
+          onClick={() => {
+            if (isMobile) {
+              setMobileMenuOpen(!mobileMenuOpen);
+              setSidebarMinimized(false);
+            } else {
+              setSidebarMinimized(!sidebarMinimized);
+            }
+          }}
         >
-          {sidebarMinimized ? <Menu size={20} /> : <X size={20} />}
+          {mobileMenuOpen || !sidebarMinimized ? <X size={20} /> : <Menu size={20} />}
         </button>
         
         <div className="main-header">
@@ -338,7 +346,7 @@ function App() {
               <div className="quick-links">
                 <div className="lh-grid">
                   <div className="links-grid home-grid">
-                    {homeLinks.map((link) => (
+                    {(isMobile ? homeLinks.slice(0, 16) : homeLinks).map((link) => (
                       <LinkItem 
                         key={link.id}
                         link={link}
@@ -348,8 +356,8 @@ function App() {
                       />
                     ))}
                     
-                    {/* Fill remaining slots up to 40 items */}
-                    {Array.from({ length: emptySlots }, (_, index) => (
+                    {/* Fill remaining slots up to 40 items or 16 on mobile */}
+                    {Array.from({ length: window.innerWidth <= 600 ? Math.max(0, 16 - homeLinks.length) : emptySlots }, (_, index) => (
                       <div key={`empty-${index}`} className="link-item add-link" onClick={() => {
                         setNewLink({ name: '', url: '', group: 'home' });
                         setShowAddLinkModal(true);
