@@ -130,7 +130,8 @@
   background-color: var(--dash-bg-dark);
   z-index: 1000;
   transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: auto;
   will-change: width;
   transform: translateZ(0);
   -webkit-font-smoothing: antialiased;
@@ -710,6 +711,61 @@
 
 .submit-btn:hover {
   opacity: 0.8;
+}
+
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--dash-bg-dark);
+  font-family: "Rubik", sans-serif;
+  z-index: 9999;
+}
+
+.loading-screen.dark {
+  background-color: var(--dash-bg-dark);
+}
+
+.loading-screen.light {
+  background-color: var(--primary-light);
+}
+
+.loading-logo {
+  font-size: 4rem;
+  font-weight: bold;
+  color: var(--color-dark);
+  position: relative;
+  background: linear-gradient(-45deg, 
+      rgba(255, 255, 255, 0.2) 0%, 
+      rgba(255, 255, 255, 0.3) 25%, 
+      rgba(255, 255, 255, 0.7) 45%, 
+      rgba(255, 255, 255, 0.75) 50%, 
+      rgba(255, 255, 255, 0.75) 55%, 
+      rgba(255, 255, 255, 0.3) 75%, 
+      rgba(255, 255, 255, 0.2) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: glowFlow 2.25s ease-in-out infinite;
+}
+
+@keyframes glowFlow {
+    0% {
+        background-position: -200% 0;
+    }
+    /* 50% {
+        background-position: 100% 0;
+    } */
+    100% {
+        background-position: 100% 0;
+    }
 }
 
 @media screen and (max-width: 600px) {

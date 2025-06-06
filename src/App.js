@@ -1,15 +1,13 @@
 import './App.css';
-import logo from './assets/img/memoflux_logo.png';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, X, Home, Link, CheckSquare, Menu, Sun, Moon, Settings} from 'lucide-react';
+import { Plus, X, Home, Link, CheckSquare, Menu, Sun, Moon, Settings } from 'lucide-react';
+import logo from './assets/img/memoflux_logo.png';
 
 function App() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDark, setIsDark] = useState(true);
   const [currentView, setCurrentView] = useState('MemoFlux');
-  const [linkGroups, setLinkGroups] = useState({
-    'links': []
-  });
+  const [linkGroups, setLinkGroups] = useState({ 'links': [] });
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
   const [newLink, setNewLink] = useState({ name: '', url: '', group: 'links' });
@@ -21,11 +19,38 @@ function App() {
   const [editingLink, setEditingLink] = useState(null);
   const [homeLinks, setHomeLinks] = useState([]);
 
+  // Loading screen effect
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
+    let minLoadingTimer;
+    let assetsLoaded = false;
+    let minTimeElapsed = false;
+
+    const checkAndSetLoading = () => {
+      if (assetsLoaded && minTimeElapsed) {
+        setIsLoading(false);
+      }
+    };
+
+    minLoadingTimer = setTimeout(() => {
+      minTimeElapsed = true;
+      checkAndSetLoading();
+    }, 2000);
+
+    Promise.all([
+      ...Array.from(document.images).map(img => {
+        return new Promise(resolve => {
+          if (img.complete) resolve();
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      }),
+      document.fonts.ready
+    ]).then(() => {
+      assetsLoaded = true;
+      checkAndSetLoading();
+    });
+
+    return () => clearTimeout(minLoadingTimer);
   }, []);
 
   const toggleTheme = useCallback(() => {
@@ -130,9 +155,9 @@ function App() {
     }
   }, [newLink, editingLink, getFavicon]);
 
-  const removeHomeLink = useCallback((linkId) => {
-    setHomeLinks(prev => prev.filter(link => link.id !== linkId));
-  }, []);
+  // const removeHomeLink = useCallback((linkId) => {
+  //   setHomeLinks(prev => prev.filter(link => link.id !== linkId));
+  // }, []);
 
   const handleGoogleSearch = useCallback(() => {
     if (searchQuery.trim()) {
@@ -146,12 +171,12 @@ function App() {
     setMobileMenuOpen(false);
   }, []);
 
-  const removeLink = useCallback((groupName, linkId) => {
-    setLinkGroups(prev => ({
-      ...prev,
-      [groupName]: prev[groupName].filter(link => link.id !== linkId)
-    }));
-  }, []);
+  // const removeLink = useCallback((groupName, linkId) => {
+  //   setLinkGroups(prev => ({
+  //     ...prev,
+  //     [groupName]: prev[groupName].filter(link => link.id !== linkId)
+  //   }));
+  // }, []);
 
   const removeCurrentLink = useCallback(() => {
     if (editingLink) {
@@ -188,7 +213,7 @@ function App() {
     [linkGroups, currentView]
   );
 
-  // Add keyboard handling for modals
+  // Escape key handler for modals
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
@@ -205,7 +230,7 @@ function App() {
   if (isLoading) {
     return (
       <div className={`loading-screen ${isDark ? 'dark' : 'light'}`}>
-          <div className="loading-logo glow-text">MemoFlux</div>
+        <div className="loading-logo glow-text">MemoFlux</div>
       </div>
     );
   }
@@ -214,7 +239,6 @@ function App() {
     <div className={`App ${isDark ? 'dark' : 'light'}`}>
       <div className="bg_effect"></div>
       
-      {/* Mobile Menu Button */}
       <button 
         className="mobile-menu-btn"
         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -222,31 +246,7 @@ function App() {
         <Menu size={20} />
       </button>
       
-      {/* Sidebar */}
       <div className={`sidebar ${sidebarMinimized ? 'minimized' : ''} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-        {/* <div className="sidebar-header">
-          <div className="logo">
-            {!sidebarMinimized && (
-              <>
-                <img src={logo} alt="MemoFlux" className="sidebar-logo" />
-                <span className="logo-text">MemoFlux</span>
-              </>
-            )}
-          </div>
-          <button 
-            className="close-menu-btn desktop-only"
-            onClick={() => setSidebarMinimized(!sidebarMinimized)}
-          >
-            <X size={20} />
-          </button>
-          <button 
-            className="close-btn mobile-only"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <X size={16} />
-          </button>
-        </div> */}
-        
         <nav className="sidebar-nav">
           <div 
             className={`nav-item ${currentView === 'MemoFlux' ? 'active' : ''}`} 
@@ -300,27 +300,23 @@ function App() {
         </nav>
       </div>
       
-      {/* Mobile Overlay */}
       {mobileMenuOpen && <div className="mobile-overlay" onClick={() => setMobileMenuOpen(false)}></div>}
       
       <div className={`wrapper ${sidebarMinimized ? 'sidebar-minimized' : ''}`}>
-
-      <button 
+        <button 
           className="minimize-btn desktop-only"
           onClick={() => setSidebarMinimized(!sidebarMinimized)}
-          >
+        >
           {sidebarMinimized ? <Menu size={20} /> : <X size={20} />}
-      </button>
+        </button>
         
-      {/* Main Header */}
-      <div className="main-header">
-        <div className="header-content">
-          {currentView === 'MemoFlux' && <img src={logo} alt='MemoFlux' className="header-logo" />}
-          <h1>{currentView}</h1>
+        <div className="main-header">
+          <div className="header-content">
+            {currentView === 'MemoFlux' && <img src={logo} alt='MemoFlux' className="header-logo" />}
+            <h1>{currentView}</h1>
+          </div>
         </div>
-      </div>
 
-        {/* Main Content Container */}
         <div className="main-content">
           {currentView === 'MemoFlux' && (
             <div className="home-view">
