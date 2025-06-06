@@ -1,6 +1,6 @@
 import './App.css';
 import { useState, useEffect } from 'react';
-import { Plus, Search, X, Home, Link, MoreHorizontal, CheckSquare, Menu, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
+import { Plus, X, Home, Link, MoreHorizontal, CheckSquare, Menu, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -245,7 +245,7 @@ function App() {
 
           {currentView !== 'MemoFlux' && currentView !== 'todo' && (
             <div className="links-view">
-              <div className="section-header">
+              {/* <div className="section-header">
                 <h2>{currentView}</h2>
                 <button className="add-btn" onClick={() => {
                   setNewLink({ ...newLink, group: currentView });
@@ -253,7 +253,7 @@ function App() {
                 }}>
                   <Plus size={16} /> add link
                 </button>
-              </div>
+              </div> */}
               
               <div className="links-grid">
                 {(linkGroups[currentView] || []).map((link) => (
@@ -323,14 +323,14 @@ function App() {
                 value={newLink.url}
                 onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
               />
-              <select
+              {/* <select
                 value={newLink.group}
                 onChange={(e) => setNewLink({ ...newLink, group: e.target.value })}
               >
                 {Object.keys(linkGroups).map(group => (
                   <option key={group} value={group}>{group}</option>
                 ))}
-              </select>
+              </select> */}
               <button className="submit-btn" onClick={addLink}>
                 add link
               </button>
