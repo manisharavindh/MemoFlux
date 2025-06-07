@@ -4,11 +4,45 @@ import { Plus, X, Home, Link, CheckSquare, Menu, Sun, Moon, Settings } from 'luc
 import logo from './assets/img/memoflux_logo.png';
 
 function App() {
+  // Initialize save function first to avoid hoisting issues
+  const saveToLocalStorage = useMemo(() => {
+    return (data) => {
+      try {
+        localStorage.setItem('memofluxData', JSON.stringify(data));
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
+    };
+  }, []);
+
+  // Get initial state from localStorage
+  const initialState = useMemo(() => {
+    try {
+      const savedData = localStorage.getItem('memofluxData');
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        return {
+          isDark: parsedData.isDark ?? true,
+          linkGroups: parsedData.linkGroups || { 'links': [] },
+          homeLinks: parsedData.homeLinks || []
+        };
+      }
+    } catch (error) {
+      console.error('Error loading initial state:', error);
+    }
+    return {
+      isDark: true,
+      linkGroups: { 'links': [] },
+      homeLinks: []
+    };
+  }, []);
+
   const [isLoading, setIsLoading] = useState(true);
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(initialState.isDark);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 600);
   const [currentView, setCurrentView] = useState('MemoFlux'); 
-  const [linkGroups, setLinkGroups] = useState({ 'links': [] });
+  const [linkGroups, setLinkGroups] = useState(initialState.linkGroups);
+  const [homeLinks, setHomeLinks] = useState(initialState.homeLinks);
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
   const [newLink, setNewLink] = useState({ name: '', url: '', group: 'links' });
@@ -18,7 +52,6 @@ function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showEditLinkModal, setShowEditLinkModal] = useState(false);
   const [editingLink, setEditingLink] = useState(null);
-  const [homeLinks, setHomeLinks] = useState([]);
 
   // Loading screen effect
   useEffect(() => {
@@ -55,8 +88,13 @@ function App() {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setIsDark(prev => !prev);
-  }, []);
+    setIsDark(prev => {
+      const newIsDark = !prev;
+      // Save immediately after updating
+      saveToLocalStorage({ linkGroups, homeLinks, isDark: newIsDark });
+      return newIsDark;
+    });
+  }, [saveToLocalStorage, linkGroups, homeLinks]);
 
   // Memoize favicon function to prevent recreating it on every render
   const getFavicon = useCallback((url) => {
@@ -98,35 +136,45 @@ function App() {
       
       // Make getFavicon async
       getFavicon(fullUrl).then(faviconUrl => {
-        setLinkGroups(prev => ({
-          ...prev,
-          [newLink.group]: [...(prev[newLink.group] || []), {
-            id: Date.now(),
-            name: newLink.name,
-            url: fullUrl,
-            favicon: faviconUrl
-          }]
-        }));
+        setLinkGroups(prev => {
+          const newGroups = {
+            ...prev,
+            [newLink.group]: [...(prev[newLink.group] || []), {
+              id: Date.now(),
+              name: newLink.name,
+              url: fullUrl,
+              favicon: faviconUrl
+            }]
+          };
+          // Save immediately after updating
+          saveToLocalStorage({ linkGroups: newGroups, homeLinks, isDark });
+          return newGroups;
+        });
       });
       
       setNewLink({ name: '', url: '', group: 'links' });
       setShowAddLinkModal(false);
     }
-  }, [newLink, getFavicon]);
+  }, [newLink, getFavicon, saveToLocalStorage, homeLinks, isDark]);
 
   const addGroup = useCallback(() => {
     const trimmedName = newGroupName.trim();
     const lowercaseName = trimmedName.toLowerCase();
     
     if (trimmedName && !linkGroups[lowercaseName]) {
-      setLinkGroups(prev => ({
-        ...prev,
-        [lowercaseName]: []
-      }));
+      setLinkGroups(prev => {
+        const newGroups = {
+          ...prev,
+          [lowercaseName]: []
+        };
+        // Save immediately after updating
+        saveToLocalStorage({ linkGroups: newGroups, homeLinks, isDark });
+        return newGroups;
+      });
       setNewGroupName('');
       setShowAddGroupModal(false);
     }
-  }, [newGroupName, linkGroups]);
+  }, [newGroupName, linkGroups, saveToLocalStorage, homeLinks, isDark]);
 
   const addHomeLink = useCallback(() => {
     if (newLink.name && newLink.url) {
@@ -134,18 +182,23 @@ function App() {
       
       // Make getFavicon async
       getFavicon(fullUrl).then(faviconUrl => {
-        setHomeLinks(prev => [...prev, {
-          id: Date.now(),
-          name: newLink.name,
-          url: fullUrl,
-          favicon: faviconUrl
-        }]);
+        setHomeLinks(prev => {
+          const newHomeLinks = [...prev, {
+            id: Date.now(),
+            name: newLink.name,
+            url: fullUrl,
+            favicon: faviconUrl
+          }];
+          // Save immediately after updating
+          saveToLocalStorage({ linkGroups, homeLinks: newHomeLinks, isDark });
+          return newHomeLinks;
+        });
       });
       
       setNewLink({ name: '', url: '', group: 'links' });
       setShowAddLinkModal(false);
     }
-  }, [newLink, getFavicon]);
+  }, [newLink, getFavicon, saveToLocalStorage, linkGroups, isDark]);
 
   const editLink = useCallback((link, isHome = false) => {
     setEditingLink({ ...link, isHome });
@@ -167,16 +220,26 @@ function App() {
         };
 
         if (editingLink.isHome) {
-          setHomeLinks(prev => prev.map(link => 
-            link.id === editingLink.id ? updatedLink : link
-          ));
-        } else {
-          setLinkGroups(prev => ({
-            ...prev,
-            [editingLink.group]: prev[editingLink.group].map(link => 
+          setHomeLinks(prev => {
+            const newHomeLinks = prev.map(link => 
               link.id === editingLink.id ? updatedLink : link
-            )
-          }));
+            );
+            // Save immediately after updating
+            saveToLocalStorage({ linkGroups, homeLinks: newHomeLinks, isDark });
+            return newHomeLinks;
+          });
+        } else {
+          setLinkGroups(prev => {
+            const newGroups = {
+              ...prev,
+              [editingLink.group]: prev[editingLink.group].map(link => 
+                link.id === editingLink.id ? updatedLink : link
+              )
+            };
+            // Save immediately after updating
+            saveToLocalStorage({ linkGroups: newGroups, homeLinks, isDark });
+            return newGroups;
+          });
         }
 
         setNewLink({ name: '', url: '', group: 'links' });
@@ -184,7 +247,7 @@ function App() {
         setEditingLink(null);
       });
     }
-  }, [newLink, editingLink, getFavicon]);
+  }, [newLink, editingLink, getFavicon, saveToLocalStorage, linkGroups, homeLinks, isDark]);
 
   const handleGoogleSearch = useCallback(() => {
     if (searchQuery.trim()) {
@@ -201,19 +264,29 @@ function App() {
   const removeCurrentLink = useCallback(() => {
     if (editingLink) {
       if (editingLink.isHome) {
-        setHomeLinks(prev => prev.filter(link => link.id !== editingLink.id));
+        setHomeLinks(prev => {
+          const newHomeLinks = prev.filter(link => link.id !== editingLink.id);
+          // Save immediately after updating
+          saveToLocalStorage({ linkGroups, homeLinks: newHomeLinks, isDark });
+          return newHomeLinks;
+        });
       } else {
-        setLinkGroups(prev => ({
-          ...prev,
-          [editingLink.group]: prev[editingLink.group].filter(link => link.id !== editingLink.id)
-        }));
+        setLinkGroups(prev => {
+          const newGroups = {
+            ...prev,
+            [editingLink.group]: prev[editingLink.group].filter(link => link.id !== editingLink.id)
+          };
+          // Save immediately after updating
+          saveToLocalStorage({ linkGroups: newGroups, homeLinks, isDark });
+          return newGroups;
+        });
       }
       
       setNewLink({ name: '', url: '', group: 'links' });
       setShowEditLinkModal(false);
       setEditingLink(null);
     }
-  }, [editingLink]);
+  }, [editingLink, saveToLocalStorage, linkGroups, homeLinks, isDark]);
 
   // Memoize filtered link groups to prevent recalculation
   const filteredLinkGroups = useMemo(() => 
@@ -254,6 +327,76 @@ function App() {
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 600);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Data management functions
+  const exportData = useCallback(() => {
+    const dataToExport = {
+      linkGroups,
+      homeLinks,
+      isDark,
+      exportDate: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `memoflux-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [linkGroups, homeLinks, isDark]);
+
+  const importData = useCallback((file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importedData = JSON.parse(e.target.result);
+        const newLinkGroups = importedData.linkGroups || { 'links': [] };
+        const newHomeLinks = importedData.homeLinks || [];
+        const newIsDark = importedData.isDark ?? true;
+        
+        // Update state
+        setLinkGroups(newLinkGroups);
+        setHomeLinks(newHomeLinks);
+        setIsDark(newIsDark);
+
+        // Save to localStorage immediately
+        saveToLocalStorage({
+          linkGroups: newLinkGroups,
+          homeLinks: newHomeLinks,
+          isDark: newIsDark
+        });
+
+        // Reload the page to ensure a clean state, matching deletion behavior
+        window.location.reload();
+      } catch (error) {
+        console.error('Error importing data:', error);
+        alert('Invalid backup file format');
+      }
+    };
+    reader.readAsText(file);
+  }, [saveToLocalStorage]);
+
+  const deleteAllData = useCallback(() => {
+    if (window.confirm('Are you sure you want to delete all data? This action cannot be undone.')) {
+      localStorage.removeItem('memofluxData');
+      setLinkGroups({ 'links': [] });
+      setHomeLinks([]);
+      window.location.reload(); // Reload the page to ensure a clean state
+    }
   }, []);
 
   if (isLoading) {
@@ -312,37 +455,50 @@ function App() {
             <CheckSquare size={16} />
             {!sidebarMinimized && <span>todo</span>}
           </div>
+          
           <div 
+            className={`nav-item ${currentView === 'settings' ? 'active' : ''}`} 
+            onClick={() => handleNavClick('settings')}
+          >
+            <Settings size={16} />
+            {!sidebarMinimized && <span>settings</span>}
+          </div>
+
+          {/* <div 
             onClick={toggleTheme}
             className={`nav-item dl-toggle ${isDark ? 'dark' : 'light'}`}
           >
             {isDark ? <Sun size={16} /> : <Moon size={16} />}
             {!sidebarMinimized && <span>{isDark ? 'Light' : 'Dark'}</span>}
-          </div>
+          </div> */}
         </nav>
       </div>
       
       <div className={`wrapper ${sidebarMinimized ? 'sidebar-minimized' : ''} ${mobileMenuOpen ? 'mobile-menu-open' : ''}`}>
-        <button 
-          className="minimize-btn"
-          onClick={() => {
-            if (isMobile) {
-              setMobileMenuOpen(!mobileMenuOpen);
-              setSidebarMinimized(false);
-            } else {
-              setSidebarMinimized(!sidebarMinimized);
-            }
-          }}
-        >
-          {isMobile ? (mobileMenuOpen ? <X size={20} /> : <Menu size={20} />) : (!sidebarMinimized ? <X size={20} /> : <Menu size={20} />)}
-        </button>
-        
-        <div className="main-header">
-          <div className="header-content">
-            {currentView === 'MemoFlux' && <img src={logo} alt='MemoFlux' className="header-logo" />}
-            <h1>{currentView}</h1>
-          </div>
-        </div>
+        {(
+          <>
+            <button 
+              className="minimize-btn"
+              onClick={() => {
+                if (isMobile) {
+                  setMobileMenuOpen(!mobileMenuOpen);
+                  setSidebarMinimized(false);
+                } else {
+                  setSidebarMinimized(!sidebarMinimized);
+                }
+              }}
+            >
+              {isMobile ? (mobileMenuOpen ? <X size={20} /> : <Menu size={20} />) : (!sidebarMinimized ? <X size={20} /> : <Menu size={20} />)}
+            </button>
+            
+            <div className="main-header">
+              <div className="header-content">
+                {currentView === 'MemoFlux' && <img src={logo} alt='MemoFlux' className="header-logo" />}
+                <h1>{currentView}</h1>
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="main-content">
           {currentView === 'MemoFlux' && (
@@ -406,7 +562,7 @@ function App() {
             </div>
           )}
 
-          {currentView !== 'MemoFlux' && currentView !== 'todo' && (
+          {currentView !== 'MemoFlux' && currentView !== 'todo' && currentView !== 'settings' && (
             <div className="links-view">
               <div className="links-grid">
                 {currentGroupLinks.map((link) => (
@@ -436,6 +592,64 @@ function App() {
             <div className="todo-view">
               <h2>todo</h2>
               <p>todo functionality coming soon...</p>
+            </div>
+          )}
+
+          {currentView === 'settings' && (
+            <div className="settings-view">
+              <div className="settings-section">
+                <h2>Theme Settings</h2>
+                <div className="settings-actions">
+                  <button 
+                    className="settings-btn"
+                    onClick={toggleTheme}
+                  >
+                    <div className="icon-dl">{isDark ? <Sun size={16} /> : <Moon size={16} />}</div>
+                    Switch to {isDark ? 'Light' : 'Dark'} Mode
+                  </button>
+                </div>
+
+                <h2>Data Management</h2>
+                <div className="settings-actions">
+                  <button className="settings-btn" onClick={exportData}>
+                    Export Data Backup
+                  </button>
+                  
+                  <div className="settings-btn-container">
+                    <input
+                      type="file"
+                      id="importData"
+                      accept=".json"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          importData(e.target.files[0]);
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                    <button 
+                      className="settings-btn"
+                      onClick={() => document.getElementById('importData').click()}
+                    >
+                      Import Data Backup
+                    </button>
+                  </div>
+
+                  <button className="settings-btn delete-btn" onClick={deleteAllData}>
+                    Delete All Data
+                  </button>
+                </div>
+                {/* <div className="settings-info">
+                  <h3>About Data Management</h3>
+                  <ul>
+                    <li>Your data is automatically saved in your browser's local storage</li>
+                    <li>Export creates a backup file of all your data</li>
+                    <li>Import allows you to restore from a previous backup</li>
+                    <li>Delete All Data will remove everything and cannot be undone</li>
+                  </ul>
+                </div> */}
+              </div>
             </div>
           )}
         </div>
