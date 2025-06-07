@@ -1,6 +1,6 @@
 import './App.css';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, X, Home, Link, CheckSquare, Menu, Sun, Moon, Settings } from 'lucide-react';
+import { Plus, X, Home, Link, CheckSquare, Menu, Sun, Moon, Settings, BookOpen, Star, Heart, Zap, Command, Coffee, Music } from 'lucide-react';
 import logo from './assets/img/memoflux_logo.png';
 
 function App() {
@@ -15,6 +15,18 @@ function App() {
     };
   }, []);
 
+  // Available icons for groups
+  const availableIcons = useMemo(() => ({
+    'Link': Link,
+    'Star': Star,
+    'Heart': Heart,
+    'Zap': Zap,
+    'Command': Command,
+    'Coffee': Coffee,
+    'Music': Music,
+    'BookOpen': BookOpen
+  }), []);
+
   // Get initial state from localStorage
   const initialState = useMemo(() => {
     try {
@@ -23,7 +35,7 @@ function App() {
         const parsedData = JSON.parse(savedData);
         return {
           isDark: parsedData.isDark ?? true,
-          linkGroups: parsedData.linkGroups || { 'links': [] },
+          linkGroups: parsedData.linkGroups || { 'links': { name: 'links', icon: 'Link', items: [] } },
           homeLinks: parsedData.homeLinks || []
         };
       }
@@ -32,7 +44,7 @@ function App() {
     }
     return {
       isDark: true,
-      linkGroups: { 'links': [] },
+      linkGroups: { 'links': { name: 'links', icon: 'Link', items: [] } },
       homeLinks: []
     };
   }, []);
@@ -45,8 +57,10 @@ function App() {
   const [homeLinks, setHomeLinks] = useState(initialState.homeLinks);
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
+  const [showEditGroupModal, setShowEditGroupModal] = useState(false);
   const [newLink, setNewLink] = useState({ name: '', url: '', group: 'links' });
-  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupInfo, setNewGroupInfo] = useState({ name: '', icon: 'Link', customEmoji: '' });
+  const [editingGroup, setEditingGroup] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarMinimized, setSidebarMinimized] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -139,12 +153,15 @@ function App() {
         setLinkGroups(prev => {
           const newGroups = {
             ...prev,
-            [newLink.group]: [...(prev[newLink.group] || []), {
-              id: Date.now(),
-              name: newLink.name,
-              url: fullUrl,
-              favicon: faviconUrl
-            }]
+            [newLink.group]: {
+              ...prev[newLink.group],
+              items: [...(prev[newLink.group].items || []), {
+                id: Date.now(),
+                name: newLink.name,
+                url: fullUrl,
+                favicon: faviconUrl
+              }]
+            }
           };
           // Save immediately after updating
           saveToLocalStorage({ linkGroups: newGroups, homeLinks, isDark });
@@ -158,23 +175,65 @@ function App() {
   }, [newLink, getFavicon, saveToLocalStorage, homeLinks, isDark]);
 
   const addGroup = useCallback(() => {
-    const trimmedName = newGroupName.trim();
+    const trimmedName = newGroupInfo.name.trim();
     const lowercaseName = trimmedName.toLowerCase();
     
     if (trimmedName && !linkGroups[lowercaseName]) {
       setLinkGroups(prev => {
         const newGroups = {
           ...prev,
-          [lowercaseName]: []
+          [lowercaseName]: {
+            name: trimmedName,
+            icon: newGroupInfo.customEmoji || newGroupInfo.icon,
+            items: []
+          }
         };
         // Save immediately after updating
         saveToLocalStorage({ linkGroups: newGroups, homeLinks, isDark });
         return newGroups;
       });
-      setNewGroupName('');
+      setNewGroupInfo({ name: '', icon: 'Link', customEmoji: '' });
       setShowAddGroupModal(false);
     }
-  }, [newGroupName, linkGroups, saveToLocalStorage, homeLinks, isDark]);
+  }, [newGroupInfo, linkGroups, saveToLocalStorage, homeLinks, isDark]);
+
+  const handleGroupEdit = useCallback(() => {
+    if (!editingGroup) return;
+    
+    const oldKey = editingGroup.key;
+    const trimmedName = newGroupInfo.name.trim();
+    const lowercaseName = trimmedName.toLowerCase();
+    
+    if (trimmedName && (lowercaseName === oldKey || !linkGroups[lowercaseName])) {
+      setLinkGroups(prev => {
+        const newGroups = { ...prev };
+        
+        // If name changed, create new key and delete old one
+        if (lowercaseName !== oldKey) {
+          delete newGroups[oldKey];
+        }
+        
+        newGroups[lowercaseName] = {
+          name: trimmedName,
+          icon: newGroupInfo.customEmoji || newGroupInfo.icon,
+          items: prev[oldKey]?.items || []
+        };
+        
+        // Save immediately after updating
+        saveToLocalStorage({ linkGroups: newGroups, homeLinks, isDark });
+        return newGroups;
+      });
+      
+      // Update current view if needed
+      if (currentView === oldKey) {
+        setCurrentView(lowercaseName);
+      }
+      
+      setNewGroupInfo({ name: '', icon: 'Link', customEmoji: '' });
+      setEditingGroup(null);
+      setShowEditGroupModal(false);
+    }
+  }, [editingGroup, newGroupInfo, linkGroups, currentView, saveToLocalStorage, homeLinks, isDark]);
 
   const addHomeLink = useCallback(() => {
     if (newLink.name && newLink.url) {
@@ -249,6 +308,54 @@ function App() {
     }
   }, [newLink, editingLink, getFavicon, saveToLocalStorage, linkGroups, homeLinks, isDark]);
 
+  // const editGroup = useCallback((groupName) => {
+  //   const group = linkGroups[groupName];
+  //   if (group) {
+  //     setEditingGroup({ name: groupName, icon: group.icon });
+  //     setShowEditGroupModal(true);
+  //   }
+  // }, [linkGroups]);
+
+  // const updateGroup = useCallback(() => {
+  //   if (editingGroup) {
+  //     setLinkGroups(prev => {
+  //       const updatedGroup = { ...prev[editingGroup.name], icon: editingGroup.icon };
+  //       const newGroups = { ...prev, [editingGroup.name]: updatedGroup };
+  //       // Save immediately after updating
+  //       saveToLocalStorage({ linkGroups: newGroups, homeLinks, isDark });
+  //       return newGroups;
+  //     });
+  //     setShowEditGroupModal(false);
+  //     setEditingGroup(null);
+  //   }
+  // }, [editingGroup, saveToLocalStorage, linkGroups, homeLinks, isDark]);
+
+  const deleteGroup = useCallback(() => {
+    if (!editingGroup) return;
+    
+    const groupKey = editingGroup.key;
+    if (window.confirm(`Are you sure you want to delete "${editingGroup.name}" group and all its links?`)) {
+      setLinkGroups(prev => {
+        const newGroups = { ...prev };
+        delete newGroups[groupKey];
+        
+        // Save immediately after updating
+        saveToLocalStorage({ linkGroups: newGroups, homeLinks, isDark });
+        
+        // If we're currently viewing the deleted group, switch to MemoFlux
+        if (currentView === groupKey) {
+          setCurrentView('MemoFlux');
+        }
+        
+        return newGroups;
+      });
+      
+      setShowEditGroupModal(false);
+      setEditingGroup(null);
+      setNewGroupInfo({ name: '', icon: 'Link', customEmoji: '' });
+    }
+  }, [editingGroup, currentView, saveToLocalStorage, homeLinks, isDark]);
+
   const handleGoogleSearch = useCallback(() => {
     if (searchQuery.trim()) {
       window.open(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`, '_blank');
@@ -301,10 +408,10 @@ function App() {
   );
 
   // Memoize current group links
-  const currentGroupLinks = useMemo(() => 
-    linkGroups[currentView] || [],
-    [linkGroups, currentView]
-  );
+  // const currentGroupLinks = useMemo(() => 
+  //   linkGroups[currentView] || [],
+  //   [linkGroups, currentView]
+  // );
 
   // Escape key handler for modals
   useEffect(() => {
@@ -313,12 +420,13 @@ function App() {
         if (showAddLinkModal) setShowAddLinkModal(false);
         if (showAddGroupModal) setShowAddGroupModal(false);
         if (showEditLinkModal) setShowEditLinkModal(false);
+        if (showEditGroupModal) setShowEditGroupModal(false);
       }
     };
     
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [showAddLinkModal, showAddGroupModal, showEditLinkModal]);
+  }, [showAddLinkModal, showAddGroupModal, showEditLinkModal, showEditGroupModal]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -391,7 +499,7 @@ function App() {
   }, [saveToLocalStorage]);
 
   const deleteAllData = useCallback(() => {
-    if (window.confirm('Are you sure you want to delete all data? This action cannot be undone.')) {
+    if (window.confirm('-Are you sure you want to delete all data? \n-This action cannot be undone.')) {
       localStorage.removeItem('memofluxData');
       setLinkGroups({ 'links': [] });
       setHomeLinks([]);
@@ -429,16 +537,44 @@ function App() {
             {!sidebarMinimized && <span>links</span>}
           </div>
           
-          {filteredLinkGroups.map(group => (
-            <div 
-              key={group} 
-              className={`nav-item ${currentView === group ? 'active' : ''}`} 
-              onClick={() => handleNavClick(group)}
-            >
-              <Link size={16} />
-              {!sidebarMinimized && <span>{group}</span>}
-            </div>
-          ))}
+          {filteredLinkGroups.map(groupKey => {
+            const group = linkGroups[groupKey];
+            const IconComponent = group.icon in availableIcons ? availableIcons[group.icon] : Link;
+            
+            return (
+              <div 
+                key={groupKey} 
+                className={`nav-item ${currentView === groupKey ? 'active' : ''}`}
+                onClick={() => handleNavClick(groupKey)}
+              >
+                {group.icon && group.icon.length === 1 ? (
+                  <span className="emoji-icon">{group.icon}</span>
+                ) : (
+                  <IconComponent size={16} />
+                )}
+                {!sidebarMinimized && (
+                  <>
+                    <span>{group.name}</span>
+                    <button
+                      className="edit-group-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingGroup({ key: groupKey, ...group });
+                        setNewGroupInfo({
+                          name: group.name,
+                          icon: group.icon in availableIcons ? group.icon : 'Link',
+                          customEmoji: group.icon in availableIcons ? '' : group.icon
+                        });
+                        setShowEditGroupModal(true);
+                      }}
+                    >
+                      <Settings size={12} />
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })}
           
           <div 
             className="nav-item" 
@@ -493,7 +629,26 @@ function App() {
             
             <div className="main-header">
               <div className="header-content">
-                {currentView === 'MemoFlux' && <img src={logo} alt='MemoFlux' className="header-logo" />}
+                {currentView === 'MemoFlux' ? (
+                  <img src={logo} alt='MemoFlux' className="header-logo" />
+                ) : (
+                  currentView === 'todo' ? (
+                    <CheckSquare size={24} />
+                  ) : currentView === 'settings' ? (
+                    <Settings size={24} />
+                  ) : currentView === 'links' ? (
+                    <Link size={24} />
+                  ) : (
+                    linkGroups[currentView] && (
+                      linkGroups[currentView].icon.length === 1 ? (
+                        <span className="emoji-icon header-icon">{linkGroups[currentView].icon}</span>
+                      ) : (
+                        availableIcons[linkGroups[currentView].icon] && 
+                        React.createElement(availableIcons[linkGroups[currentView].icon], { size: 24 })
+                      )
+                    )
+                  )
+                )}
                 <h1>{currentView}</h1>
               </div>
             </div>
@@ -565,7 +720,7 @@ function App() {
           {currentView !== 'MemoFlux' && currentView !== 'todo' && currentView !== 'settings' && (
             <div className="links-view">
               <div className="links-grid">
-                {currentGroupLinks.map((link) => (
+                {linkGroups[currentView]?.items.map((link) => (
                   <LinkItem 
                     key={link.id}
                     link={link}
@@ -740,22 +895,119 @@ function App() {
               <input
                 type="text"
                 placeholder="Enter a name"
-                value={newGroupName}
-                onChange={(e) => setNewGroupName(e.target.value)}
+                value={newGroupInfo.name}
+                onChange={(e) => setNewGroupInfo({ ...newGroupInfo, name: e.target.value })}
                 autoFocus
-                onKeyDown={(e) => e.key === 'Enter' && addGroup()}
               />
+              
+              <h4>Icon</h4>
+              <div className="icon-selection">
+                <div className="icon-grid">
+                  {Object.entries(availableIcons).map(([name, Icon]) => (
+                    <button
+                      key={name}
+                      className={`icon-option ${newGroupInfo.icon === name ? 'selected' : ''}`}
+                      onClick={() => setNewGroupInfo({ ...newGroupInfo, icon: name, customEmoji: '' })}
+                    >
+                      <Icon size={20} />
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="custom-emoji-input">
+                  <input
+                    type="text"
+                    placeholder="Or type emoji 😊"
+                    value={newGroupInfo.customEmoji}
+                    onChange={(e) => setNewGroupInfo({ ...newGroupInfo, customEmoji: e.target.value, icon: 'Link' })}
+                    maxLength={2}
+                  />
+                </div>
+              </div>
+
               <div className="modal-actions">
-                <button className="remove-btn-modal modal-cancel" onClick={() => setShowAddGroupModal(false)}>
+                <button className="modal-cancel" onClick={() => {
+                  setShowAddGroupModal(false);
+                  setNewGroupInfo({ name: '', icon: 'Link', customEmoji: '' });
+                }}>
                   Cancel
                 </button>
                 <button 
-                    className="submit-btn" 
-                    onClick={addGroup}
-                    disabled={!newGroupName.trim()}
-                  >
-                    Save
-                  </button>
+                  className="submit-btn" 
+                  onClick={addGroup}
+                  disabled={!newGroupInfo.name.trim()}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Group Modal */}
+      {showEditGroupModal && (
+        <div className="modal-overlay" onClick={() => setShowEditGroupModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Edit Group</h3>
+            </div>
+            <div className="modal-body">
+              <h4>Name</h4>
+              <input
+                type="text"
+                placeholder="Enter a name"
+                value={newGroupInfo.name}
+                onChange={(e) => setNewGroupInfo({ ...newGroupInfo, name: e.target.value })}
+                autoFocus
+              />
+              
+              <h4>Icon</h4>
+              <div className="icon-selection">
+                <div className="icon-grid">
+                  {Object.entries(availableIcons).map(([name, Icon]) => (
+                    <button
+                      key={name}
+                      className={`icon-option ${newGroupInfo.icon === name ? 'selected' : ''}`}
+                      onClick={() => setNewGroupInfo({ ...newGroupInfo, icon: name, customEmoji: '' })}
+                    >
+                      <Icon size={20} />
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="custom-emoji-input">
+                  <input
+                    type="text"
+                    placeholder="Or type emoji 😊"
+                    value={newGroupInfo.customEmoji}
+                    onChange={(e) => setNewGroupInfo({ ...newGroupInfo, customEmoji: e.target.value, icon: 'Link' })}
+                    maxLength={2}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button 
+                  className="remove-btn-modal"
+                  onClick={deleteGroup}
+                >
+                  Delete
+                </button>
+                <button className="modal-cancel" onClick={() => {
+                  setShowEditGroupModal(false);
+                  setNewGroupInfo({ name: '', icon: 'Link', customEmoji: '' });
+                  setEditingGroup(null);
+                }}>
+                  Cancel
+                </button>
+                <button 
+                  className="submit-btn" 
+                  onClick={handleGroupEdit}
+                  disabled={!newGroupInfo.name.trim()}
+                >
+                  Save
+                </button>
               </div>
             </div>
           </div>
