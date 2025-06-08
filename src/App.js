@@ -61,6 +61,7 @@ function App() {
   const [newLink, setNewLink] = useState({ name: '', url: '', group: 'links' });
   const [newGroupInfo, setNewGroupInfo] = useState({ name: '', icon: 'Link', customEmoji: '' });
   const [editingGroup, setEditingGroup] = useState(null);
+  const [isDuplicateName, setIsDuplicateName] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarMinimized, setSidebarMinimized] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -547,10 +548,10 @@ function App() {
                 className={`nav-item ${currentView === groupKey ? 'active' : ''}`}
                 onClick={() => handleNavClick(groupKey)}
               >
-                {group.icon && group.icon.length === 1 ? (
-                  <span className="emoji-icon">{group.icon}</span>
-                ) : (
+                {group.icon in availableIcons ? (
                   <IconComponent size={16} />
+                ) : (
+                  <span className="emoji-icon">{group.icon}</span>
                 )}
                 {!sidebarMinimized && (
                   <>
@@ -640,11 +641,10 @@ function App() {
                     <Link size={24} />
                   ) : (
                     linkGroups[currentView] && (
-                      linkGroups[currentView].icon.length === 1 ? (
-                        <span className="emoji-icon header-icon">{linkGroups[currentView].icon}</span>
-                      ) : (
-                        availableIcons[linkGroups[currentView].icon] && 
+                      availableIcons[linkGroups[currentView].icon] ? (
                         React.createElement(availableIcons[linkGroups[currentView].icon], { size: 24 })
+                      ) : (
+                        <span className="emoji-icon header-icon">{linkGroups[currentView].icon}</span>
                       )
                     )
                   )
@@ -795,6 +795,8 @@ function App() {
                     Delete All Data
                   </button>
                 </div>
+                <h2>More</h2>
+                <p>beta version - v0.4.2</p>
                 {/* <div className="settings-info">
                   <h3>About Data Management</h3>
                   <ul>
@@ -896,7 +898,14 @@ function App() {
                 type="text"
                 placeholder="Enter a name"
                 value={newGroupInfo.name}
-                onChange={(e) => setNewGroupInfo({ ...newGroupInfo, name: e.target.value })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setNewGroupInfo({ ...newGroupInfo, name: value });
+                  const lowercaseName = value.trim().toLowerCase();
+                  setIsDuplicateName(Object.keys(linkGroups).includes(lowercaseName) && 
+                    (!editingGroup || editingGroup.key !== lowercaseName));
+                }}
+                className={isDuplicateName ? 'input-error' : ''}
                 autoFocus
               />
               
@@ -919,8 +928,14 @@ function App() {
                     type="text"
                     placeholder="Or type emoji 😊"
                     value={newGroupInfo.customEmoji}
-                    onChange={(e) => setNewGroupInfo({ ...newGroupInfo, customEmoji: e.target.value, icon: 'Link' })}
-                    maxLength={2}
+                    onChange={(e) => {
+                      const input = e.target.value;
+                      // More comprehensive regex that includes emojis with variation selectors
+                      const emojiRegex = /(\p{Emoji}|\p{Emoji_Presentation}|\p{Extended_Pictographic})[\u{FE00}-\u{FE0F}\u{1F3FB}-\u{1F3FF}]*/gu;
+                      const match = input.match(emojiRegex);
+                      const firstEmoji = match ? match[0] : '';
+                      setNewGroupInfo({ ...newGroupInfo, customEmoji: firstEmoji, icon: 'Link' });
+                    }}
                   />
                 </div>
               </div>
@@ -935,7 +950,7 @@ function App() {
                 <button 
                   className="submit-btn" 
                   onClick={addGroup}
-                  disabled={!newGroupInfo.name.trim()}
+                  disabled={!newGroupInfo.name.trim() || isDuplicateName}
                 >
                   Save
                 </button>
@@ -958,7 +973,14 @@ function App() {
                 type="text"
                 placeholder="Enter a name"
                 value={newGroupInfo.name}
-                onChange={(e) => setNewGroupInfo({ ...newGroupInfo, name: e.target.value })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setNewGroupInfo({ ...newGroupInfo, name: value });
+                  const lowercaseName = value.trim().toLowerCase();
+                  setIsDuplicateName(Object.keys(linkGroups).includes(lowercaseName) && 
+                    (!editingGroup || editingGroup.key !== lowercaseName));
+                }}
+                className={isDuplicateName ? 'input-error' : ''}
                 autoFocus
               />
               
@@ -981,8 +1003,14 @@ function App() {
                     type="text"
                     placeholder="Or type emoji 😊"
                     value={newGroupInfo.customEmoji}
-                    onChange={(e) => setNewGroupInfo({ ...newGroupInfo, customEmoji: e.target.value, icon: 'Link' })}
-                    maxLength={2}
+                    onChange={(e) => {
+                      const input = e.target.value;
+                      // More comprehensive regex that includes emojis with variation selectors
+                      const emojiRegex = /(\p{Emoji}|\p{Emoji_Presentation}|\p{Extended_Pictographic})[\u{FE00}-\u{FE0F}\u{1F3FB}-\u{1F3FF}]*/gu;
+                      const match = input.match(emojiRegex);
+                      const firstEmoji = match ? match[0] : '';
+                      setNewGroupInfo({ ...newGroupInfo, customEmoji: firstEmoji, icon: 'Link' });
+                    }}
                   />
                 </div>
               </div>
@@ -1004,7 +1032,7 @@ function App() {
                 <button 
                   className="submit-btn" 
                   onClick={handleGroupEdit}
-                  disabled={!newGroupInfo.name.trim()}
+                  disabled={!newGroupInfo.name.trim() || isDuplicateName}
                 >
                   Save
                 </button>
