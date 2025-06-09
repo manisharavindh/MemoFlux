@@ -4,7 +4,7 @@ import { Plus, X, Home, Link, CheckSquare, Menu, Sun, Moon, Settings, BookOpen, 
 import logo from './assets/img/memoflux_logo.png';
 
 function App() {
-  const version = 'v0.4.4';
+  const version = 'v0.4.5';
   // Initialize save function first to avoid hoisting issues
   const saveToLocalStorage = useMemo(() => {
     return (data) => {
