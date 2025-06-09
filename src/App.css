@@ -388,8 +388,8 @@
   gap: 1rem;
   grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
   justify-content: center;
-  width: 60%;
-  padding-top: 1.5rem;
+  width: 100%;
+  /* padding-top: 1.5rem; */
   /* padding-left: 25%; */
 }
 
