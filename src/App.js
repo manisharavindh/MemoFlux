@@ -4,6 +4,7 @@ import { Plus, X, Home, Link, CheckSquare, Menu, Sun, Moon, Settings, BookOpen, 
 import logo from './assets/img/memoflux_logo.png';
 
 function App() {
+  const version = 'v0.4.3';
   // Initialize save function first to avoid hoisting issues
   const saveToLocalStorage = useMemo(() => {
     return (data) => {
@@ -58,8 +59,9 @@ function App() {
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
   const [showEditGroupModal, setShowEditGroupModal] = useState(false);
-  const [newLink, setNewLink] = useState({ name: '', url: '', group: 'links' });
+  const [newLink, setNewLink] = useState({ name: '', url: '', group: 'links', customFavicon: '' });
   const [newGroupInfo, setNewGroupInfo] = useState({ name: '', icon: 'Link', customEmoji: '' });
+  const [faviconError, setFaviconError] = useState(false);
   const [editingGroup, setEditingGroup] = useState(null);
   const [isDuplicateName, setIsDuplicateName] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -112,12 +114,30 @@ function App() {
   }, [saveToLocalStorage, linkGroups, homeLinks]);
 
   // Memoize favicon function to prevent recreating it on every render
-  const getFavicon = useCallback((url) => {
+  const validateImageUrl = useCallback((url) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = url;
+    });
+  }, []);
+
+  const getFavicon = useCallback(async (url, customFavicon) => {
+    if (customFavicon) {
+      const isValid = await validateImageUrl(customFavicon);
+      if (isValid) {
+        return customFavicon;
+      }
+      setFaviconError(true);
+      setTimeout(() => setFaviconError(false), 820);
+      return null;
+    }
+
     try {
       const domain = new URL(url).hostname;
       const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
       
-      // Return null if the URL is not valid or domain is empty
       if (!domain) {
         return null;
       }
@@ -125,8 +145,6 @@ function App() {
       return new Promise((resolve) => {
         const img = new Image();
         img.onload = function() {
-          // Check if the image is the default favicon by comparing dimensions
-          // Google's default favicon is typically 16x16
           if (this.width === 16 && this.height === 16) {
             resolve(null);
           } else {
@@ -150,7 +168,7 @@ function App() {
       const fullUrl = newLink.url.startsWith('http') ? newLink.url : `https://${newLink.url}`;
       
       // Make getFavicon async
-      getFavicon(fullUrl).then(faviconUrl => {
+      getFavicon(fullUrl, newLink.customFavicon).then(faviconUrl => {
         setLinkGroups(prev => {
           const newGroups = {
             ...prev,
@@ -160,7 +178,8 @@ function App() {
                 id: Date.now(),
                 name: newLink.name,
                 url: fullUrl,
-                favicon: faviconUrl
+                favicon: faviconUrl,
+                customFavicon: newLink.customFavicon
               }]
             }
           };
@@ -170,7 +189,7 @@ function App() {
         });
       });
       
-      setNewLink({ name: '', url: '', group: 'links' });
+      setNewLink({ name: '', url: '', group: 'links', customFavicon: '' });
       setShowAddLinkModal(false);
     }
   }, [newLink, getFavicon, saveToLocalStorage, homeLinks, isDark]);
@@ -241,13 +260,14 @@ function App() {
       const fullUrl = newLink.url.startsWith('http') ? newLink.url : `https://${newLink.url}`;
       
       // Make getFavicon async
-      getFavicon(fullUrl).then(faviconUrl => {
+      getFavicon(fullUrl, newLink.customFavicon).then(faviconUrl => {
         setHomeLinks(prev => {
           const newHomeLinks = [...prev, {
             id: Date.now(),
             name: newLink.name,
             url: fullUrl,
-            favicon: faviconUrl
+            favicon: faviconUrl,
+            customFavicon: newLink.customFavicon
           }];
           // Save immediately after updating
           saveToLocalStorage({ linkGroups, homeLinks: newHomeLinks, isDark });
@@ -255,14 +275,19 @@ function App() {
         });
       });
       
-      setNewLink({ name: '', url: '', group: 'links' });
+      setNewLink({ name: '', url: '', group: 'links', customFavicon: '' });
       setShowAddLinkModal(false);
     }
   }, [newLink, getFavicon, saveToLocalStorage, linkGroups, isDark]);
 
   const editLink = useCallback((link, isHome = false) => {
     setEditingLink({ ...link, isHome });
-    setNewLink({ name: link.name, url: link.url, group: 'links' });
+    setNewLink({ 
+      name: link.name, 
+      url: link.url, 
+      group: 'links', 
+      customFavicon: link.customFavicon || '' 
+    });
     setShowEditLinkModal(true);
   }, []);
 
@@ -271,12 +296,13 @@ function App() {
       const fullUrl = newLink.url.startsWith('http') ? newLink.url : `https://${newLink.url}`;
       
       // Make getFavicon async
-      getFavicon(fullUrl).then(faviconUrl => {
+      getFavicon(fullUrl, newLink.customFavicon).then(faviconUrl => {
         const updatedLink = {
           ...editingLink,
           name: newLink.name,
           url: fullUrl,
-          favicon: faviconUrl
+          favicon: faviconUrl,
+          customFavicon: newLink.customFavicon
         };
 
         if (editingLink.isHome) {
@@ -308,28 +334,6 @@ function App() {
       });
     }
   }, [newLink, editingLink, getFavicon, saveToLocalStorage, linkGroups, homeLinks, isDark]);
-
-  // const editGroup = useCallback((groupName) => {
-  //   const group = linkGroups[groupName];
-  //   if (group) {
-  //     setEditingGroup({ name: groupName, icon: group.icon });
-  //     setShowEditGroupModal(true);
-  //   }
-  // }, [linkGroups]);
-
-  // const updateGroup = useCallback(() => {
-  //   if (editingGroup) {
-  //     setLinkGroups(prev => {
-  //       const updatedGroup = { ...prev[editingGroup.name], icon: editingGroup.icon };
-  //       const newGroups = { ...prev, [editingGroup.name]: updatedGroup };
-  //       // Save immediately after updating
-  //       saveToLocalStorage({ linkGroups: newGroups, homeLinks, isDark });
-  //       return newGroups;
-  //     });
-  //     setShowEditGroupModal(false);
-  //     setEditingGroup(null);
-  //   }
-  // }, [editingGroup, saveToLocalStorage, linkGroups, homeLinks, isDark]);
 
   const deleteGroup = useCallback(() => {
     if (!editingGroup) return;
@@ -407,12 +411,6 @@ function App() {
     Math.max(0, isMobile ? 16 - homeLinks.length : 40 - homeLinks.length),
     [homeLinks.length, isMobile]
   );
-
-  // Memoize current group links
-  // const currentGroupLinks = useMemo(() => 
-  //   linkGroups[currentView] || [],
-  //   [linkGroups, currentView]
-  // );
 
   // Escape key handler for modals
   useEffect(() => {
@@ -527,7 +525,7 @@ function App() {
             onClick={() => handleNavClick('MemoFlux')}
           >
             <Home size={16} />
-            {!sidebarMinimized && <span>Home</span>}
+            <span>Home</span>
           </div>
           
           <div 
@@ -535,7 +533,7 @@ function App() {
             onClick={() => handleNavClick('links')}
           >
             <Link size={16} />
-            {!sidebarMinimized && <span>links</span>}
+            <span>links</span>
           </div>
           
           {filteredLinkGroups.map(groupKey => {
@@ -553,26 +551,22 @@ function App() {
                 ) : (
                   <span className="emoji-icon">{group.icon}</span>
                 )}
-                {!sidebarMinimized && (
-                  <>
-                    <span>{group.name}</span>
-                    <button
-                      className="edit-group-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingGroup({ key: groupKey, ...group });
-                        setNewGroupInfo({
-                          name: group.name,
-                          icon: group.icon in availableIcons ? group.icon : 'Link',
-                          customEmoji: group.icon in availableIcons ? '' : group.icon
-                        });
-                        setShowEditGroupModal(true);
-                      }}
-                    >
-                      <Settings size={12} />
-                    </button>
-                  </>
-                )}
+                  <span>{group.name}</span>
+                  <button
+                    className="edit-group-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingGroup({ key: groupKey, ...group });
+                      setNewGroupInfo({
+                        name: group.name,
+                        icon: group.icon in availableIcons ? group.icon : 'Link',
+                        customEmoji: group.icon in availableIcons ? '' : group.icon
+                      });
+                      setShowEditGroupModal(true);
+                    }}
+                  >
+                    <Settings size={12} />
+                  </button>
               </div>
             );
           })}
@@ -582,7 +576,7 @@ function App() {
             onClick={() => setShowAddGroupModal(true)}
           >
             <Plus size={16} />
-            {!sidebarMinimized && <span>add group</span>}
+            <span>add group</span>
           </div>
           
           <div 
@@ -590,7 +584,7 @@ function App() {
             onClick={() => handleNavClick('todo')}
           >
             <CheckSquare size={16} />
-            {!sidebarMinimized && <span>todo</span>}
+            <span>todo</span>
           </div>
           
           <div 
@@ -598,7 +592,7 @@ function App() {
             onClick={() => handleNavClick('settings')}
           >
             <Settings size={16} />
-            {!sidebarMinimized && <span>settings</span>}
+            <span>settings</span>
           </div>
 
           {/* <div 
@@ -759,7 +753,7 @@ function App() {
                     className="settings-btn"
                     onClick={toggleTheme}
                   >
-                    <div className="icon-dl">{isDark ? <Sun size={16} /> : <Moon size={16} />}</div>
+                    {/* <div className="icon-dl">{isDark ? <Sun size={16} /> : <Moon size={16} />}</div> */}
                     Switch to {isDark ? 'Light' : 'Dark'} Mode
                   </button>
                 </div>
@@ -796,7 +790,7 @@ function App() {
                   </button>
                 </div>
                 <h2>More</h2>
-                <p>beta version - v0.4.2</p>
+                <p>beta version - {version}</p>
                 {/* <div className="settings-info">
                   <h3>About Data Management</h3>
                   <ul>
@@ -820,20 +814,46 @@ function App() {
               <h3>Add link</h3>
             </div>
             <div className="modal-body">
-              <h4>Title</h4>
-              <input
-                type="text"
-                placeholder="Enter a title"
-                value={newLink.name}
-                onChange={(e) => setNewLink({ ...newLink, name: e.target.value })}
-              />
-              <h4>URL</h4>
-              <input
-                type="text"
-                placeholder="Type or paste a URL"
-                value={newLink.url}
-                onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
-              />
+              <div className="modal-content-wrapper">
+                <div className="modal-inputs">
+                  <h4>Title</h4>
+                  <input
+                    type="text"
+                    placeholder="Enter a title"
+                    value={newLink.name}
+                    onChange={(e) => setNewLink({ ...newLink, name: e.target.value })}
+                  />
+                  <h4>URL</h4>
+                  <input
+                    type="text"
+                    placeholder="Type or paste a URL"
+                    value={newLink.url}
+                    onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+                  />
+                  <h4>Custom Icon URL (optional)</h4>
+                  <input
+                    type="text"
+                    placeholder="Enter image URL for custom favicon"
+                    value={newLink.customFavicon}
+                    className={faviconError ? 'input-error' : ''}
+                    onChange={(e) => setNewLink({ ...newLink, customFavicon: e.target.value })}
+                  />
+                </div>
+                <div className="favicon-preview">
+                  <FaviconPreview 
+                    url={newLink.url}
+                    customFavicon={newLink.customFavicon}
+                    name={newLink.name}
+                    onError={() => {
+                      setFaviconError(true);
+                      setTimeout(() => setFaviconError(false), 820);
+                    }}
+                  />
+                  <div className="favicon-preview-title">
+                    {newLink.name || 'Untitled'}
+                  </div>
+                </div>
+              </div>
               <div className="modal-actions">
                 <button className="modal-cancel" onClick={() => setShowAddLinkModal(false)}>
                   Cancel
@@ -855,20 +875,46 @@ function App() {
               <h3>Edit Link</h3>
             </div>
             <div className="modal-body">
-              <h4>Title</h4>
-              <input
-                type="text"
-                placeholder="link name"
-                value={newLink.name}
-                onChange={(e) => setNewLink({ ...newLink, name: e.target.value })}
-              />
-              <h4>URL</h4>
-              <input
-                type="text"
-                placeholder="url (with or without https://)"
-                value={newLink.url}
-                onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
-              />
+              <div className="modal-content-wrapper">
+                <div className="modal-inputs">
+                  <h4>Title</h4>
+                  <input
+                    type="text"
+                    placeholder="link name"
+                    value={newLink.name}
+                    onChange={(e) => setNewLink({ ...newLink, name: e.target.value })}
+                  />
+                  <h4>URL</h4>
+                  <input
+                    type="text"
+                    placeholder="url (with or without https://)"
+                    value={newLink.url}
+                    onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+                  />
+                  <h4>Custom Favicon URL (optional)</h4>
+                  <input
+                    type="text"
+                    placeholder="Enter image URL for custom favicon"
+                    value={newLink.customFavicon}
+                    className={faviconError ? 'input-error' : ''}
+                    onChange={(e) => setNewLink({ ...newLink, customFavicon: e.target.value })}
+                  />
+                </div>
+                <div className="favicon-preview">
+                  <FaviconPreview 
+                    url={newLink.url}
+                    customFavicon={newLink.customFavicon}
+                    name={newLink.name}
+                    onError={() => {
+                      setFaviconError(true);
+                      setTimeout(() => setFaviconError(false), 820);
+                    }}
+                  />
+                  <div className="favicon-preview-title">
+                    {newLink.name || 'Untitled'}
+                  </div>
+                </div>
+              </div>
               <div className="modal-actions">
                 <button className="remove-btn-modal" onClick={removeCurrentLink}>
                   Delete
@@ -1059,8 +1105,13 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
   });
 
   const handleImageError = useCallback((e) => {
-    e.target.style.display = 'none';
-    e.target.nextSibling.style.display = 'flex';
+    if (e.target && e.target.parentNode) {
+      e.target.remove();
+      const initialEl = e.target.nextSibling;
+      if (initialEl) {
+        initialEl.style.display = 'flex';
+      }
+    }
   }, []);
 
   const handleClick = useCallback((e) => {
@@ -1080,22 +1131,73 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
       </button>
       <div className="link-content" onClick={handleClick}>
         <div className="link-icon">
-          {link.favicon ? (
+          <div className="link-initial" style={{ display: 'flex', background: initialBgColor }}>
+            {getInitial(link.name)}
+          </div>
+          {link.favicon && (
             <img 
               src={link.favicon} 
               alt="" 
               onError={handleImageError}
+              onLoad={(e) => {
+                if (e.target.width !== 16) {
+                  e.target.style.display = 'block';
+                  e.target.previousSibling.style.display = 'none';
+                } else {
+                  e.target.remove();
+                }
+              }}
+              style={{ display: 'none', position: 'absolute' }}
               loading="lazy"
               width="32"
               height="32"
             />
-          ) : null}
-          <div className="link-initial" style={{ display: link.favicon ? 'none' : 'flex', background: initialBgColor }}>
-            {getInitial(link.name)}
-          </div>
+          )}
         </div>
         <span className="link-name">{link.name}</span>
       </div>
+    </div>
+  );
+});
+
+// Memoized FaviconPreview component for previewing favicons safely
+const FaviconPreview = React.memo(({ url, customFavicon, name, onError }) => {
+  const [showPlaceholder, setShowPlaceholder] = React.useState(!customFavicon && !url);
+  const [showImage, setShowImage] = React.useState(false);
+
+  const handleImageError = React.useCallback(() => {
+    setShowPlaceholder(true);
+    setShowImage(false);
+    if (customFavicon && onError) {
+      onError();
+    }
+  }, [customFavicon, onError]);
+
+  const handleImageLoad = React.useCallback((e) => {
+    if (e.target.width === 16) {
+      handleImageError();
+    } else {
+      setShowPlaceholder(false);
+      setShowImage(true);
+    }
+  }, [handleImageError]);
+
+  return (
+    <div className="favicon-preview-box">
+      {showPlaceholder && (
+        <div className="favicon-placeholder">
+          {name ? name.charAt(0).toUpperCase() : '?'}
+        </div>
+      )}
+      {(customFavicon || url) && (
+        <img 
+          src={customFavicon || `https://www.google.com/s2/favicons?domain=${new URL(url.startsWith('http') ? url : `https://${url}`).hostname}&sz=32`}
+          alt=""
+          style={{ display: showImage ? 'block' : 'none' }}
+          onError={handleImageError}
+          onLoad={handleImageLoad}
+        />
+      )}
     </div>
   );
 });
