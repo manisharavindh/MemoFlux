@@ -4,7 +4,7 @@ import { Plus, X, Home, Link, CheckSquare, Menu, Settings, BookOpen, Star, Heart
 import logo from './assets/img/memoflux_logo.png';
 
 function App() {
-  const version = 'v0.4.11';
+  const version = 'v0.4.12';
   // Initialize save function first to avoid hoisting issues
   const saveToLocalStorage = useMemo(() => {
     return (data) => {
@@ -654,8 +654,8 @@ function App() {
               {isMobile ? (mobileMenuOpen ? <X size={20} /> : <Menu size={20} />) : (!sidebarMinimized ? <X size={20} /> : <Menu size={20} />)}
             </button>
             
-            <div className="main-header">
-              <div className="header-content">
+            <div className={currentView == 'MemoFlux' ? 'main-header home-header' : 'main-header'}>
+              <div className='header-content'>
                 {currentView === 'MemoFlux' ? (
                   <img src={logo} alt='MemoFlux' className="header-logo" />
                 ) : (
