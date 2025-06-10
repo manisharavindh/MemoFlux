@@ -4,7 +4,7 @@ import { Plus, X, Home, Link, CheckSquare, Menu, Sun, Moon, Settings, BookOpen, 
 import logo from './assets/img/memoflux_logo.png';
 
 function App() {
-  const version = 'v0.4.6';
+  const version = 'v0.4.7';
   // Initialize save function first to avoid hoisting issues
   const saveToLocalStorage = useMemo(() => {
     return (data) => {
@@ -53,6 +53,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDark, setIsDark] = useState(initialState.isDark);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 600);
+  const [showLongPressHint, setShowLongPressHint] = useState(false);
   const [currentView, setCurrentView] = useState('MemoFlux'); 
   const [linkGroups, setLinkGroups] = useState(initialState.linkGroups);
   const [homeLinks, setHomeLinks] = useState(initialState.homeLinks);
@@ -519,6 +520,19 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    if (isMobile) {
+      const hasSeenHint = localStorage.getItem('hasSeenLongPressHint');
+      if (!hasSeenHint) {
+        setShowLongPressHint(true);
+        setTimeout(() => {
+          setShowLongPressHint(false);
+          localStorage.setItem('hasSeenLongPressHint', 'true');
+        }, 3000);
+      }
+    }
+  }, [isMobile]);
+
   if (isLoading) {
     return (
       <div className={`loading-screen ${isDark ? 'dark' : 'light'}`}>
@@ -565,21 +579,23 @@ function App() {
                   <span className="emoji-icon">{group.icon}</span>
                 )}
                   <span>{group.name}</span>
-                  <button
-                    className="edit-group-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingGroup({ key: groupKey, ...group });
-                      setNewGroupInfo({
-                        name: group.name,
-                        icon: group.icon in availableIcons ? group.icon : 'Link',
-                        customEmoji: group.icon in availableIcons ? '' : group.icon
-                      });
-                      setShowEditGroupModal(true);
-                    }}
-                  >
-                    <Settings size={12} />
-                  </button>
+                  {!isMobile && (
+                    <button
+                      className="edit-group-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingGroup({ key: groupKey, ...group });
+                        setNewGroupInfo({
+                          name: group.name,
+                          icon: group.icon in availableIcons ? group.icon : 'Link',
+                          customEmoji: group.icon in availableIcons ? '' : group.icon
+                        });
+                        setShowEditGroupModal(true);
+                      }}
+                    >
+                      <Settings size={12} />
+                    </button>
+                  )}
               </div>
             );
           })}
@@ -657,6 +673,23 @@ function App() {
                   )
                 )}
                 <h1>{currentView}</h1>
+                {isMobile && currentView !== 'MemoFlux' && currentView !== 'todo' && currentView !== 'settings' && currentView !== 'links' && (
+                  <button
+                    className="mobile-edit-group-btn"
+                    onClick={() => {
+                      const group = linkGroups[currentView];
+                      setEditingGroup({ key: currentView, ...group });
+                      setNewGroupInfo({
+                        name: group.name,
+                        icon: group.icon in availableIcons ? group.icon : 'Link',
+                        customEmoji: group.icon in availableIcons ? '' : group.icon
+                      });
+                      setShowEditGroupModal(true);
+                    }}
+                  >
+                    <Settings size={17} />
+                  </button>
+                )}
               </div>
             </div>
           </>
@@ -1100,6 +1133,12 @@ function App() {
           </div>
         </div>
       )}
+
+      {showLongPressHint && (
+        <div className="long-press-hint">
+          Long press any link to edit or delete
+        </div>
+      )}
     </div>
   );
 }
@@ -1119,6 +1158,8 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
 
   const [showFavicon, setShowFavicon] = useState(false);
   const [faviconUrl, setFaviconUrl] = useState(link.favicon);
+  const [isMobile] = useState(window.innerWidth <= 600);
+  const [longPressTimer, setLongPressTimer] = useState(null);
   
   useEffect(() => {
     // Reset state when link changes
@@ -1150,11 +1191,33 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
     onEdit();
   }, [onEdit]);
 
+  const handleTouchStart = useCallback((e) => {
+    if (!isMobile) return;
+    const timer = setTimeout(() => {
+      onEdit();
+    }, 500); // 500ms long press
+    setLongPressTimer(timer);
+  }, [isMobile, onEdit]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  }, [longPressTimer]);
+
   return (
-    <div className="link-item">
-      <button className="edit-btn" onClick={handleEditClick}>
-        <Settings size={8} />
-      </button>
+    <div 
+      className="link-item"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+    >
+      {!isMobile && (
+        <button className="edit-btn" onClick={handleEditClick}>
+          <Settings size={8} />
+        </button>
+      )}
       <div className="link-content" onClick={handleClick}>
         <div className="link-icon">
           <div className="link-initial" style={{ 
