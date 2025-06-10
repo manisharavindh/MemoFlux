@@ -402,7 +402,8 @@
 
 .links-grid.home-grid {
   width: 60%;
-  gap: 1.5rem !important;
+  /* gap: 15rem !important; */
+  padding: 1.5rem;
   grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
 }
 
@@ -1166,7 +1167,7 @@
   }
 
   .header-content h1{
-    font-size: 2.5rem;
+    font-size: 1.5rem;
   }
   
   .header-logo {
@@ -1557,7 +1558,8 @@
 
 @media screen and (max-width: 600px) {
   .link-name {
-    font-size: 11px;
+    font-size: 0.9rem !important;
+    font-weight: normal;
     margin-top: 4px;
     display: block;
     text-overflow: ellipsis;
@@ -1591,8 +1593,12 @@
     margin-bottom: 0.75rem;
   }
   .links-grid{
-    padding: 0 1.5rem !important;
+    padding: 0 1.75rem !important;
     margin-top: 0.15rem;
+    column-gap: 1.5rem;
+  }
+  .links-grid.home-grid {
+    column-gap: 1.5rem;
   }
   .lh-grid{
     padding: 0;
@@ -1601,6 +1607,6 @@
     padding: 0;
   } */
   .quick-links{
-    padding: 0;
+    padding: 0 0.25rem;
   }
 }
