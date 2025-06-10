@@ -1160,7 +1160,14 @@
   .main-header {
     padding: 1;
     padding-top: 3rem;
+    border: 0;
+    border-radius: 0 !important;
   }
+  .main-content {
+    border: 0;
+    border-radius: 0 !important;
+  }
+
   .header-content {
     justify-content: center;
     gap: 0.5rem;
@@ -1215,12 +1222,14 @@
 
 @media screen and (max-width: 600px) {
   .minimize-btn {
-    left: 1.15rem;
+    top: 0;
+    left: 0.5rem;
     z-index: 1003;
     pointer-events: auto;
   }
 
   .sidebar {
+    border-right: 0.75rem solid var(--dash-bg-dark);
     transform: translateX(-150px);
     transition: transform 0.2s var(--transition-timing); /* Faster transition */
   }
@@ -1472,8 +1481,8 @@
   .mobile-edit-group-btn {
     position: fixed;
     padding: 0.75rem;
-    top: 1.125rem;
-    right: 1.125rem;
+    top: 0.125rem;
+    right: 0.6rem;
     border: 0;
     cursor: pointer;
     transition: all 0.15s var(--transition-timing);
@@ -1558,9 +1567,9 @@
 
 @media screen and (max-width: 600px) {
   .link-name {
-    font-size: 0.9rem !important;
-    font-weight: normal;
-    margin-top: 4px;
+    font-size: 0.8rem !important;
+    bottom: -1.15rem;
+    font-weight: 400;
     display: block;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -1593,7 +1602,7 @@
     margin-bottom: 0.75rem;
   }
   .links-grid{
-    padding: 0 1.75rem !important;
+    padding: 0 1.65rem !important;
     margin-top: 0.15rem;
     column-gap: 1.5rem;
   }
@@ -1607,6 +1616,6 @@
     padding: 0;
   } */
   .quick-links{
-    padding: 0 0.25rem;
+    padding: 0 0.15rem;
   }
 }
