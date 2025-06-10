@@ -1591,12 +1591,16 @@
     margin-bottom: 0.75rem;
   }
   .links-grid{
-    padding: 0;
+    padding: 0 1.5rem !important;
+    margin-top: 0.15rem;
   }
   .lh-grid{
     padding: 0;
   }
-  /* .quick-links{
+  /* .lh-grid .links-grid {
     padding: 0;
   } */
+  .quick-links{
+    padding: 0;
+  }
 }

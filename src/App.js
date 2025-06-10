@@ -4,12 +4,16 @@ import { Plus, X, Home, Link, CheckSquare, Menu, Settings, BookOpen, Star, Heart
 import logo from './assets/img/memoflux_logo.png';
 
 function App() {
-  const version = 'v0.4.8';
+  const version = 'v0.4.9';
   // Initialize save function first to avoid hoisting issues
   const saveToLocalStorage = useMemo(() => {
     return (data) => {
       try {
-        localStorage.setItem('memofluxData', JSON.stringify(data));
+        const dataToSave = {
+          ...data,
+          loadingScreenEnabled: data.loadingScreenEnabled ?? true,
+        };
+        localStorage.setItem('memofluxData', JSON.stringify(dataToSave));
       } catch (error) {
         console.error('Error saving to localStorage:', error);
       }
@@ -36,6 +40,7 @@ function App() {
         const parsedData = JSON.parse(savedData);
         return {
           isDark: parsedData.isDark ?? true,
+          loadingScreenEnabled: parsedData.loadingScreenEnabled ?? true,
           linkGroups: parsedData.linkGroups || { 'links': { name: 'links', icon: 'Link', items: [] } },
           homeLinks: parsedData.homeLinks || []
         };
@@ -45,6 +50,7 @@ function App() {
     }
     return {
       isDark: true,
+      loadingScreenEnabled: true,
       linkGroups: { 'links': { name: 'links', icon: 'Link', items: [] } },
       homeLinks: []
     };
@@ -52,6 +58,7 @@ function App() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isDark, setIsDark] = useState(initialState.isDark);
+  const [loadingScreenEnabled, setLoadingScreenEnabled] = useState(initialState.loadingScreenEnabled ?? true);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 600);
   const [showLongPressHint, setShowLongPressHint] = useState(false);
   const [currentView, setCurrentView] = useState('MemoFlux'); 
@@ -466,6 +473,7 @@ function App() {
       linkGroups,
       homeLinks,
       isDark,
+      loadingScreenEnabled,
       exportDate: new Date().toISOString()
     };
     
@@ -488,17 +496,20 @@ function App() {
         const newLinkGroups = importedData.linkGroups || { 'links': [] };
         const newHomeLinks = importedData.homeLinks || [];
         const newIsDark = importedData.isDark ?? true;
+        const newLoadingScreenEnabled = importedData.loadingScreenEnabled ?? true;
         
         // Update state
         setLinkGroups(newLinkGroups);
         setHomeLinks(newHomeLinks);
         setIsDark(newIsDark);
+        setLoadingScreenEnabled(newLoadingScreenEnabled);
 
         // Save to localStorage immediately
         saveToLocalStorage({
           linkGroups: newLinkGroups,
           homeLinks: newHomeLinks,
-          isDark: newIsDark
+          isDark: newIsDark,
+          loadingScreenEnabled: newLoadingScreenEnabled
         });
 
         // Reload the page to ensure a clean state, matching deletion behavior
@@ -533,7 +544,7 @@ function App() {
     }
   }, [isMobile]);
 
-  if (isLoading) {
+  if (isLoading && (loadingScreenEnabled || (!loadingScreenEnabled && isLoading === 'force'))) {
     return (
       <div className={`loading-screen ${isDark ? 'dark' : 'light'}`}>
         <div className="loading-logo glow-text">MemoFlux</div>
@@ -791,8 +802,19 @@ function App() {
                     className="settings-btn"
                     onClick={toggleTheme}
                   >
-                    {/* <div className="icon-dl">{isDark ? <Sun size={16} /> : <Moon size={16} />}</div> */}
                     Switch to {isDark ? 'Light' : 'Dark'} Mode
+                  </button>
+                  <button 
+                    className="settings-btn"
+                    onClick={() => {
+                      setLoadingScreenEnabled(prev => {
+                        const newValue = !prev;
+                        saveToLocalStorage({ linkGroups, homeLinks, isDark, loadingScreenEnabled: newValue });
+                        return newValue;
+                      });
+                    }}
+                  >
+                    {loadingScreenEnabled ? 'Disable' : 'Enable'} Loading Screen
                   </button>
                 </div>
 
