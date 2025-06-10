@@ -4,7 +4,7 @@ import { Plus, X, Home, Link, CheckSquare, Menu, Sun, Moon, Settings, BookOpen, 
 import logo from './assets/img/memoflux_logo.png';
 
 function App() {
-  const version = 'v0.4.5';
+  const version = 'v0.4.6';
   // Initialize save function first to avoid hoisting issues
   const saveToLocalStorage = useMemo(() => {
     return (data) => {
@@ -136,28 +136,38 @@ function App() {
 
     try {
       const domain = new URL(url).hostname;
-      const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+      const googleFaviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+      const defaultFaviconUrl = `https://${domain}/favicon.ico`;
       
       if (!domain) {
         return null;
       }
 
-      return new Promise((resolve) => {
+      // Try Google's favicon service first
+      const googleValid = await validateImageUrl(googleFaviconUrl);
+      if (googleValid) {
         const img = new Image();
-        img.onload = function() {
-          if (this.width === 16 && this.height === 16) {
-            resolve(null);
-          } else {
-            resolve(faviconUrl);
-          }
-        };
-        img.onerror = () => resolve(null);
-        img.src = faviconUrl;
-      });
+        await new Promise((resolve) => {
+          img.onload = resolve;
+          img.src = googleFaviconUrl;
+        });
+        
+        if (img.width > 16 || img.height > 16) {
+          return googleFaviconUrl;
+        }
+      }
+
+      // Try the default favicon.ico as fallback
+      const defaultValid = await validateImageUrl(defaultFaviconUrl);
+      if (defaultValid) {
+        return defaultFaviconUrl;
+      }
+
+      return null;
     } catch {
       return null;
     }
-  }, []);
+  }, [validateImageUrl]);
 
   const getInitial = useCallback((name) => {
     return name.charAt(0).toUpperCase();
@@ -318,9 +328,12 @@ function App() {
           setLinkGroups(prev => {
             const newGroups = {
               ...prev,
-              [editingLink.group]: prev[editingLink.group].map(link => 
-                link.id === editingLink.id ? updatedLink : link
-              )
+              [editingLink.group]: {
+                ...prev[editingLink.group],
+                items: prev[editingLink.group].items.map(link => 
+                  link.id === editingLink.id ? updatedLink : link
+                )
+              }
             };
             // Save immediately after updating
             saveToLocalStorage({ linkGroups: newGroups, homeLinks, isDark });
@@ -1104,15 +1117,28 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
     return colors[Math.floor(Math.random() * colors.length)];
   });
 
-  const handleImageError = useCallback((e) => {
-    if (e.target && e.target.parentNode) {
-      e.target.remove();
-      const initialEl = e.target.nextSibling;
-      if (initialEl) {
-        initialEl.style.display = 'flex';
-      }
+  const [showFavicon, setShowFavicon] = useState(false);
+  const [faviconUrl, setFaviconUrl] = useState(link.favicon);
+  
+  useEffect(() => {
+    // Reset state when link changes
+    setShowFavicon(false);
+    setFaviconUrl(link.favicon);
+
+    if (link.favicon) {
+      const img = new Image();
+      img.onload = () => {
+        if (img.width > 16 && img.height > 16) {
+          setShowFavicon(true);
+        }
+      };
+      img.onerror = () => {
+        setShowFavicon(false);
+        setFaviconUrl(null);
+      };
+      img.src = link.favicon;
     }
-  }, []);
+  }, [link.favicon]);
 
   const handleClick = useCallback((e) => {
     e.preventDefault();
@@ -1131,23 +1157,20 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
       </button>
       <div className="link-content" onClick={handleClick}>
         <div className="link-icon">
-          <div className="link-initial" style={{ display: 'flex', background: initialBgColor }}>
+          <div className="link-initial" style={{ 
+            display: showFavicon ? 'none' : 'flex', 
+            background: initialBgColor 
+          }}>
             {getInitial(link.name)}
           </div>
-          {link.favicon && (
+          {faviconUrl && (
             <img 
-              src={link.favicon} 
+              src={faviconUrl} 
               alt="" 
-              onError={handleImageError}
-              onLoad={(e) => {
-                if (e.target.width !== 16) {
-                  e.target.style.display = 'block';
-                  e.target.previousSibling.style.display = 'none';
-                } else {
-                  e.target.remove();
-                }
+              style={{ 
+                display: showFavicon ? 'block' : 'none', 
+                position: 'absolute' 
               }}
-              style={{ display: 'none', position: 'absolute' }}
               loading="lazy"
               width="32"
               height="32"
