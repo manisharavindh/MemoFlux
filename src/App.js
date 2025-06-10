@@ -1,10 +1,10 @@
 import './App.css';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, X, Home, Link, CheckSquare, Menu, Sun, Moon, Settings, BookOpen, Star, Heart, Zap, Command, Coffee, Music } from 'lucide-react';
+import { Plus, X, Home, Link, CheckSquare, Menu, Settings, BookOpen, Star, Heart, Zap, Command, Coffee, Music } from 'lucide-react';
 import logo from './assets/img/memoflux_logo.png';
 
 function App() {
-  const version = 'v0.4.7';
+  const version = 'v0.4.8';
   // Initialize save function first to avoid hoisting issues
   const saveToLocalStorage = useMemo(() => {
     return (data) => {
@@ -623,14 +623,6 @@ function App() {
             <Settings size={16} />
             <span>settings</span>
           </div>
-
-          {/* <div 
-            onClick={toggleTheme}
-            className={`nav-item dl-toggle ${isDark ? 'dark' : 'light'}`}
-          >
-            {isDark ? <Sun size={16} /> : <Moon size={16} />}
-            {!sidebarMinimized && <span>{isDark ? 'Light' : 'Dark'}</span>}
-          </div> */}
         </nav>
       </div>
       
@@ -1182,6 +1174,10 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
   }, [link.favicon]);
 
   const handleClick = useCallback((e) => {
+    // Prevent click from firing immediately on touch devices
+    if (e.type === 'click' && e.nativeEvent.pointerType === 'touch') {
+      return;
+    }
     e.preventDefault();
     window.open(link.url, '_blank', 'noopener,noreferrer');
   }, [link.url]);
@@ -1191,20 +1187,28 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
     onEdit();
   }, [onEdit]);
 
+  const [touchStartTime, setTouchStartTime] = useState(0);
+
   const handleTouchStart = useCallback((e) => {
     if (!isMobile) return;
+    setTouchStartTime(Date.now());
     const timer = setTimeout(() => {
       onEdit();
     }, 500); // 500ms long press
     setLongPressTimer(timer);
   }, [isMobile, onEdit]);
 
-  const handleTouchEnd = useCallback(() => {
+  const handleTouchEnd = useCallback((e) => {
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
     }
-  }, [longPressTimer]);
+    // If the touch duration was less than 500ms, treat it as a click
+    const touchDuration = Date.now() - touchStartTime;
+    if (touchDuration < 500) {
+      window.open(link.url, '_blank', 'noopener,noreferrer');
+    }
+  }, [longPressTimer, touchStartTime, link.url]);
 
   return (
     <div 
@@ -1212,13 +1216,14 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
+      onClick={handleClick}
     >
       {!isMobile && (
         <button className="edit-btn" onClick={handleEditClick}>
           <Settings size={8} />
         </button>
       )}
-      <div className="link-content" onClick={handleClick}>
+      <div className="link-content">
         <div className="link-icon">
           <div className="link-initial" style={{ 
             display: showFavicon ? 'none' : 'flex', 
