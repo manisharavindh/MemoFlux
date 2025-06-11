@@ -1,5 +1,5 @@
 import './App.css';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Plus, X, Home, Link, CheckSquare, Menu, Settings, BookOpen, Star, Heart, Zap, Command, Coffee, Music } from 'lucide-react';
 
 // Memoize logo import to prevent reloading
@@ -38,7 +38,7 @@ const saveFaviconToCache = (url, faviconUrl) => {
 };
 
 function App() {
-  const version = 'v0.4.17';
+  const version = 'v0.4.19';
   // Initialize save function first to avoid hoisting issues
   const saveToLocalStorage = useMemo(() => {
     return (data) => {
@@ -98,6 +98,12 @@ function App() {
   const [currentView, setCurrentView] = useState('MemoFlux'); 
   const [linkGroups, setLinkGroups] = useState(initialState.linkGroups);
   const [homeLinks, setHomeLinks] = useState(initialState.homeLinks);
+
+  // Memoize home links for mobile view
+  const mobileHomeLinks = useMemo(() => 
+    [...homeLinks], // Return full array for memoization
+    [homeLinks]
+  );
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
   const [showEditGroupModal, setShowEditGroupModal] = useState(false);
@@ -803,7 +809,7 @@ function App() {
               <div className="quick-links">
                 <div className="lh-grid">
                   <div className="links-grid home-grid">
-                    {(isMobile ? homeLinks.slice(0, 16) : homeLinks).map((link) => (
+                    {(isMobile ? mobileHomeLinks.slice(0, 16) : homeLinks).map((link) => (
                       <LinkItem 
                         key={link.id}
                         link={link}
@@ -1243,17 +1249,29 @@ function App() {
 
 // Memoized LinkItem component to prevent unnecessary re-renders
 const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
-  const [showFavicon, setShowFavicon] = useState(true);
+  const [showFavicon, setShowFavicon] = useState(!!link.favicon);
   const [isMobile] = useState(window.innerWidth <= 600);
   const [longPressTimer, setLongPressTimer] = useState(null);
   const [touchStartTime, setTouchStartTime] = useState(0);
   const [isLongPress, setIsLongPress] = useState(false);
   const [faviconError, setFaviconError] = useState(false);
+  const faviconLoadedRef = useRef(false);
 
   useEffect(() => {
-    if (link.favicon) {
-      setShowFavicon(true);
-      setFaviconError(false);
+    if (link.favicon && !faviconLoadedRef.current) {
+      // Pre-load the favicon image
+      const img = new Image();
+      img.onload = () => {
+        faviconLoadedRef.current = true;
+        setShowFavicon(true);
+        setFaviconError(false);
+      };
+      img.onerror = () => {
+        faviconLoadedRef.current = false;
+        setShowFavicon(false);
+        setFaviconError(true);
+      };
+      img.src = link.favicon;
     }
   }, [link.favicon]);
 
@@ -1323,22 +1341,27 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
           }}>
             {getInitial(link.name)}
           </div>
-          {link.favicon && (
+          {link.favicon && !faviconError && (
             <img 
               src={link.favicon} 
               alt="" 
               style={{ 
-                display: showFavicon && !faviconError ? 'block' : 'none', 
-                position: 'absolute' 
+                display: showFavicon ? 'block' : 'none', 
+                position: 'absolute',
+                willChange: 'transform' // Optimize for transforms
               }}
               loading="lazy"
               width="32"
               height="32"
+              decoding="async"
+              fetchPriority="low"
               onError={() => {
+                faviconLoadedRef.current = false;
                 setFaviconError(true);
                 setShowFavicon(false);
               }}
               onLoad={() => {
+                faviconLoadedRef.current = true;
                 setShowFavicon(true);
                 setFaviconError(false);
               }}
