@@ -4,7 +4,7 @@ import { Plus, X, Home, Link, CheckSquare, Menu, Settings, BookOpen, Star, Heart
 import logo from './assets/img/memoflux_logo.png';
 
 function App() {
-  const version = 'v0.4.12';
+  const version = 'v0.4.13';
   // Initialize save function first to avoid hoisting issues
   const saveToLocalStorage = useMemo(() => {
     return (data) => {
@@ -1172,8 +1172,11 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
 
   const [showFavicon, setShowFavicon] = useState(false);
   const [faviconUrl, setFaviconUrl] = useState(link.favicon);
+  // const [initialBgColor] = useState(getRandomLightColor());
   const [isMobile] = useState(window.innerWidth <= 600);
   const [longPressTimer, setLongPressTimer] = useState(null);
+  const [touchStartTime, setTouchStartTime] = useState(0);
+  const [isLongPress, setIsLongPress] = useState(false);
   
   useEffect(() => {
     // Reset state when link changes
@@ -1196,41 +1199,49 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
   }, [link.favicon]);
 
   const handleClick = useCallback((e) => {
-    // Prevent click from firing immediately on touch devices
-    if (e.type === 'click' && e.nativeEvent.pointerType === 'touch') {
+    // Don't open the link if this was triggered by a touch event or if a long press occurred
+    if (isMobile || isLongPress) {
       return;
     }
     e.preventDefault();
     window.open(link.url, '_blank', 'noopener,noreferrer');
-  }, [link.url]);
+  }, [link.url, isMobile, isLongPress]);
 
   const handleEditClick = useCallback((e) => {
     e.stopPropagation();
     onEdit();
   }, [onEdit]);
 
-  const [touchStartTime, setTouchStartTime] = useState(0);
-
   const handleTouchStart = useCallback((e) => {
     if (!isMobile) return;
+    setIsLongPress(false);
     setTouchStartTime(Date.now());
     const timer = setTimeout(() => {
+      setIsLongPress(true);
       onEdit();
     }, 500); // 500ms long press
     setLongPressTimer(timer);
   }, [isMobile, onEdit]);
 
   const handleTouchEnd = useCallback((e) => {
+    if (!isMobile) return;
+    
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
     }
-    // If the touch duration was less than 500ms, treat it as a click
+    
+    // Only open the link if it wasn't a long press and the touch duration was less than 500ms
     const touchDuration = Date.now() - touchStartTime;
-    if (touchDuration < 500) {
+    if (!isLongPress && touchDuration < 500) {
       window.open(link.url, '_blank', 'noopener,noreferrer');
     }
-  }, [longPressTimer, touchStartTime, link.url]);
+    
+    // Reset long press state after a short delay
+    setTimeout(() => {
+      setIsLongPress(false);
+    }, 100);
+  }, [longPressTimer, touchStartTime, link.url, isMobile, isLongPress]);
 
   return (
     <div 

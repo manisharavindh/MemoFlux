@@ -633,6 +633,8 @@
   width: 100vw;
   height: 100vh;
   background-color: rgba(43, 42, 51, 0.8);
+  backdrop-filter: blur(0.2rem);
+  -webkit-backdrop-filter: blur(0.2rem);
   display: flex;
   align-items: center;
   justify-content: center;
