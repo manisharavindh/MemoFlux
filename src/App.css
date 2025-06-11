@@ -1180,16 +1180,17 @@
   }
 
   .header-content h1{
-    font-size: 2rem;
+    font-size: 3rem;
+
   }
 
   .home-header{
-    padding-top: 2rem;
+    padding-top: 5rem !important;
   }
   
   .header-logo {
-    width: 30px;
-    height: 30px;
+    width: 38px;
+    height: 38px;
   }
 
   .lh-grid{

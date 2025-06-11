@@ -14,7 +14,7 @@ const isValidUrl = (url) => {
 };
 
 function App() {
-  const version = 'v0.4.15';
+  const version = 'v0.4.16';
   // Initialize save function first to avoid hoisting issues
   const saveToLocalStorage = useMemo(() => {
     return (data) => {
@@ -699,7 +699,7 @@ function App() {
               {isMobile ? (mobileMenuOpen ? <X size={20} /> : <Menu size={20} />) : (!sidebarMinimized ? <X size={20} /> : <Menu size={20} />)}
             </button>
             
-            <div className={currentView == 'MemoFlux' ? 'main-header home-header' : 'main-header'}>
+            <div className={currentView === 'MemoFlux' ? 'main-header home-header' : 'main-header'}>
               <div className='header-content'>
                 {currentView === 'MemoFlux' ? (
                   <img src={logo} alt='MemoFlux' className="header-logo" />
