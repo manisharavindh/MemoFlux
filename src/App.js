@@ -1,7 +1,11 @@
 import './App.css';
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, X, Home, Link, CheckSquare, Menu, Settings, BookOpen, Star, Heart, Zap, Command, Coffee, Music } from 'lucide-react';
-import logo from './assets/img/memoflux_logo.png';
+
+// Memoize logo import to prevent reloading
+const MemoizedLogo = React.memo(() => (
+  <img src={require('./assets/img/memoflux_logo.png')} alt='MemoFlux' className="header-logo" />
+));
 
 // URL validation helper
 const isValidUrl = (url) => {
@@ -737,7 +741,7 @@ function App() {
             <div className={currentView === 'MemoFlux' ? 'main-header home-header' : 'main-header'}>
               <div className='header-content'>
                 {currentView === 'MemoFlux' ? (
-                  <img src={logo} alt='MemoFlux' className="header-logo" />
+                  <MemoizedLogo />
                 ) : (
                   currentView === 'todo' ? (
                     <CheckSquare size={24} />
@@ -1239,35 +1243,19 @@ function App() {
 
 // Memoized LinkItem component to prevent unnecessary re-renders
 const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
-  const [showFavicon, setShowFavicon] = useState(false);
-  const [faviconUrl, setFaviconUrl] = useState(link.favicon);
+  const [showFavicon, setShowFavicon] = useState(true);
   const [isMobile] = useState(window.innerWidth <= 600);
   const [longPressTimer, setLongPressTimer] = useState(null);
   const [touchStartTime, setTouchStartTime] = useState(0);
   const [isLongPress, setIsLongPress] = useState(false);
-  const faviconCheckedRef = useRef(false);
-  
-  useEffect(() => {
-    // Only check the favicon once when the component mounts or when the favicon URL changes
-    if (!faviconCheckedRef.current || link.favicon !== faviconUrl) {
-      faviconCheckedRef.current = true;
-      setFaviconUrl(link.favicon);
+  const [faviconError, setFaviconError] = useState(false);
 
-      if (link.favicon) {
-        const img = new Image();
-        img.onload = () => {
-          if (img.width > 16 && img.height > 16) {
-            setShowFavicon(true);
-          }
-        };
-        img.onerror = () => {
-          setShowFavicon(false);
-          setFaviconUrl(null);
-        };
-        img.src = link.favicon;
-      }
+  useEffect(() => {
+    if (link.favicon) {
+      setShowFavicon(true);
+      setFaviconError(false);
     }
-  }, [link.favicon, faviconUrl]);
+  }, [link.favicon]);
 
   const handleClick = useCallback((e) => {
     // Don't open the link if this was triggered by a touch event or if a long press occurred
@@ -1330,22 +1318,30 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
       <div className="link-content">
         <div className="link-icon">
           <div className="link-initial" style={{ 
-            display: showFavicon ? 'none' : 'flex', 
+            display: !link.favicon || !showFavicon || faviconError ? 'flex' : 'none', 
             background: link.initialBgColor || 'var(--initial-color-1)' 
           }}>
             {getInitial(link.name)}
           </div>
-          {faviconUrl && (
+          {link.favicon && (
             <img 
-              src={faviconUrl} 
+              src={link.favicon} 
               alt="" 
               style={{ 
-                display: showFavicon ? 'block' : 'none', 
+                display: showFavicon && !faviconError ? 'block' : 'none', 
                 position: 'absolute' 
               }}
               loading="lazy"
               width="32"
               height="32"
+              onError={() => {
+                setFaviconError(true);
+                setShowFavicon(false);
+              }}
+              onLoad={() => {
+                setShowFavicon(true);
+                setFaviconError(false);
+              }}
             />
           )}
         </div>
