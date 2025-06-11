@@ -1,5 +1,5 @@
 import './App.css';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Plus, X, Home, Link, CheckSquare, Menu, Settings, BookOpen, Star, Heart, Zap, Command, Coffee, Music } from 'lucide-react';
 import logo from './assets/img/memoflux_logo.png';
 
@@ -13,8 +13,28 @@ const isValidUrl = (url) => {
   }
 };
 
+// Favicon cache helper functions
+const getFaviconFromCache = (url) => {
+  try {
+    const cache = JSON.parse(localStorage.getItem('faviconCache') || '{}');
+    return cache[url] || null;
+  } catch {
+    return null;
+  }
+};
+
+const saveFaviconToCache = (url, faviconUrl) => {
+  try {
+    const cache = JSON.parse(localStorage.getItem('faviconCache') || '{}');
+    cache[url] = faviconUrl;
+    localStorage.setItem('faviconCache', JSON.stringify(cache));
+  } catch (error) {
+    console.error('Error saving favicon to cache:', error);
+  }
+};
+
 function App() {
-  const version = 'v0.4.16';
+  const version = 'v0.4.17';
   // Initialize save function first to avoid hoisting issues
   const saveToLocalStorage = useMemo(() => {
     return (data) => {
@@ -141,7 +161,7 @@ function App() {
     });
   }, []);
 
-  const getFavicon = useCallback(async (url, customFavicon) => {
+  const getFavicon = useCallback(async (url, customFavicon, forceRefresh = false) => {
     if (!url) {
       return null;
     }
@@ -149,6 +169,7 @@ function App() {
     if (customFavicon) {
       const isValid = await validateImageUrl(customFavicon);
       if (isValid) {
+        saveFaviconToCache(url, customFavicon);
         return customFavicon;
       }
       setFaviconError(true);
@@ -159,6 +180,18 @@ function App() {
     try {
       if (!isValidUrl(url)) {
         return null;
+      }
+
+      // Check cache first if not forcing refresh
+      if (!forceRefresh) {
+        const cachedFavicon = getFaviconFromCache(url);
+        if (cachedFavicon) {
+          // Validate cached favicon still works
+          const isValid = await validateImageUrl(cachedFavicon);
+          if (isValid) {
+            return cachedFavicon;
+          }
+        }
       }
 
       const domain = new URL(url.startsWith('http') ? url : `https://${url}`).hostname;
@@ -179,6 +212,7 @@ function App() {
         });
         
         if (img.width > 16 || img.height > 16) {
+          saveFaviconToCache(url, googleFaviconUrl);
           return googleFaviconUrl;
         }
       }
@@ -186,6 +220,7 @@ function App() {
       // Try the default favicon.ico as fallback
       const defaultValid = await validateImageUrl(defaultFaviconUrl);
       if (defaultValid) {
+        saveFaviconToCache(url, defaultFaviconUrl);
         return defaultFaviconUrl;
       }
 
@@ -1210,26 +1245,29 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
   const [longPressTimer, setLongPressTimer] = useState(null);
   const [touchStartTime, setTouchStartTime] = useState(0);
   const [isLongPress, setIsLongPress] = useState(false);
+  const faviconCheckedRef = useRef(false);
   
   useEffect(() => {
-    // Reset state when link changes
-    setShowFavicon(false);
-    setFaviconUrl(link.favicon);
+    // Only check the favicon once when the component mounts or when the favicon URL changes
+    if (!faviconCheckedRef.current || link.favicon !== faviconUrl) {
+      faviconCheckedRef.current = true;
+      setFaviconUrl(link.favicon);
 
-    if (link.favicon) {
-      const img = new Image();
-      img.onload = () => {
-        if (img.width > 16 && img.height > 16) {
-          setShowFavicon(true);
-        }
-      };
-      img.onerror = () => {
-        setShowFavicon(false);
-        setFaviconUrl(null);
-      };
-      img.src = link.favicon;
+      if (link.favicon) {
+        const img = new Image();
+        img.onload = () => {
+          if (img.width > 16 && img.height > 16) {
+            setShowFavicon(true);
+          }
+        };
+        img.onerror = () => {
+          setShowFavicon(false);
+          setFaviconUrl(null);
+        };
+        img.src = link.favicon;
+      }
     }
-  }, [link.favicon]);
+  }, [link.favicon, faviconUrl]);
 
   const handleClick = useCallback((e) => {
     // Don't open the link if this was triggered by a touch event or if a long press occurred
