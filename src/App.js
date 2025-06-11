@@ -3,8 +3,18 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, X, Home, Link, CheckSquare, Menu, Settings, BookOpen, Star, Heart, Zap, Command, Coffee, Music } from 'lucide-react';
 import logo from './assets/img/memoflux_logo.png';
 
+// URL validation helper
+const isValidUrl = (url) => {
+  try {
+    new URL(url.startsWith('http') ? url : `https://${url}`);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 function App() {
-  const version = 'v0.4.13';
+  const version = 'v0.4.14';
   // Initialize save function first to avoid hoisting issues
   const saveToLocalStorage = useMemo(() => {
     return (data) => {
@@ -132,6 +142,10 @@ function App() {
   }, []);
 
   const getFavicon = useCallback(async (url, customFavicon) => {
+    if (!url) {
+      return null;
+    }
+    
     if (customFavicon) {
       const isValid = await validateImageUrl(customFavicon);
       if (isValid) {
@@ -143,7 +157,11 @@ function App() {
     }
 
     try {
-      const domain = new URL(url).hostname;
+      if (!isValidUrl(url)) {
+        return null;
+      }
+
+      const domain = new URL(url.startsWith('http') ? url : `https://${url}`).hostname;
       const googleFaviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
       const defaultFaviconUrl = `https://${domain}/favicon.ico`;
       
@@ -1288,6 +1306,26 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
 const FaviconPreview = React.memo(({ url, customFavicon, name, onError }) => {
   const [showPlaceholder, setShowPlaceholder] = React.useState(!customFavicon && !url);
   const [showImage, setShowImage] = React.useState(false);
+  const [faviconSrc, setFaviconSrc] = React.useState(null);
+
+  React.useEffect(() => {
+    // Reset states when inputs change
+    setShowPlaceholder(!customFavicon && !url);
+    setShowImage(false);
+
+    try {
+      if (customFavicon) {
+        setFaviconSrc(customFavicon);
+      } else if (url && isValidUrl(url)) {
+        const domain = new URL(url.startsWith('http') ? url : `https://${url}`).hostname;
+        setFaviconSrc(`https://www.google.com/s2/favicons?domain=${domain}&sz=32`);
+      } else {
+        setFaviconSrc(null);
+      }
+    } catch {
+      setFaviconSrc(null);
+    }
+  }, [url, customFavicon]);
 
   const handleImageError = React.useCallback(() => {
     setShowPlaceholder(true);
@@ -1313,9 +1351,9 @@ const FaviconPreview = React.memo(({ url, customFavicon, name, onError }) => {
           {name ? name.charAt(0).toUpperCase() : '?'}
         </div>
       )}
-      {(customFavicon || url) && (
+      {faviconSrc && (
         <img 
-          src={customFavicon || `https://www.google.com/s2/favicons?domain=${new URL(url.startsWith('http') ? url : `https://${url}`).hostname}&sz=32`}
+          src={faviconSrc}
           alt=""
           style={{ display: showImage ? 'block' : 'none' }}
           onError={handleImageError}
