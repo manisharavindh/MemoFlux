@@ -14,7 +14,7 @@ const isValidUrl = (url) => {
 };
 
 function App() {
-  const version = 'v0.4.14';
+  const version = 'v0.4.15';
   // Initialize save function first to avoid hoisting issues
   const saveToLocalStorage = useMemo(() => {
     return (data) => {
@@ -202,6 +202,14 @@ function App() {
   const addLink = useCallback(() => {
     if (newLink.name && newLink.url) {
       const fullUrl = newLink.url.startsWith('http') ? newLink.url : `https://${newLink.url}`;
+      const colors = [
+        'var(--initial-color-1)',
+        'var(--initial-color-2)',
+        'var(--initial-color-3)',
+        'var(--initial-color-4)',
+        'var(--initial-color-5)',
+      ];
+      const initialBgColor = colors[Math.floor(Math.random() * colors.length)];
       
       // Make getFavicon async
       getFavicon(fullUrl, newLink.customFavicon).then(faviconUrl => {
@@ -215,7 +223,8 @@ function App() {
                 name: newLink.name,
                 url: fullUrl,
                 favicon: faviconUrl,
-                customFavicon: newLink.customFavicon
+                customFavicon: newLink.customFavicon,
+                initialBgColor
               }]
             }
           };
@@ -294,6 +303,14 @@ function App() {
   const addHomeLink = useCallback(() => {
     if (newLink.name && newLink.url) {
       const fullUrl = newLink.url.startsWith('http') ? newLink.url : `https://${newLink.url}`;
+      const colors = [
+        'var(--initial-color-1)',
+        'var(--initial-color-2)',
+        'var(--initial-color-3)',
+        'var(--initial-color-4)',
+        'var(--initial-color-5)',
+      ];
+      const initialBgColor = colors[Math.floor(Math.random() * colors.length)];
       
       // Make getFavicon async
       getFavicon(fullUrl, newLink.customFavicon).then(faviconUrl => {
@@ -303,7 +320,8 @@ function App() {
             name: newLink.name,
             url: fullUrl,
             favicon: faviconUrl,
-            customFavicon: newLink.customFavicon
+            customFavicon: newLink.customFavicon,
+            initialBgColor
           }];
           // Save immediately after updating
           saveToLocalStorage({ linkGroups, homeLinks: newHomeLinks, isDark });
@@ -330,6 +348,13 @@ function App() {
   const updateLink = useCallback(() => {
     if (newLink.name && newLink.url && editingLink) {
       const fullUrl = newLink.url.startsWith('http') ? newLink.url : `https://${newLink.url}`;
+      const colors = [
+        'var(--initial-color-1)',
+        'var(--initial-color-2)',
+        'var(--initial-color-3)',
+        'var(--initial-color-4)',
+        'var(--initial-color-5)',
+      ];
       
       // Make getFavicon async
       getFavicon(fullUrl, newLink.customFavicon).then(faviconUrl => {
@@ -338,7 +363,9 @@ function App() {
           name: newLink.name,
           url: fullUrl,
           favicon: faviconUrl,
-          customFavicon: newLink.customFavicon
+          customFavicon: newLink.customFavicon,
+          // Preserve existing color or generate new one if missing
+          initialBgColor: editingLink.initialBgColor || colors[Math.floor(Math.random() * colors.length)]
         };
 
         if (editingLink.isHome) {
@@ -1177,20 +1204,8 @@ function App() {
 
 // Memoized LinkItem component to prevent unnecessary re-renders
 const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
-  const [initialBgColor] = React.useState(() => {
-    const colors = [
-      'var(--initial-color-1)',
-      'var(--initial-color-2)',
-      'var(--initial-color-3)',
-      'var(--initial-color-4)',
-      'var(--initial-color-5)',
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
-  });
-
   const [showFavicon, setShowFavicon] = useState(false);
   const [faviconUrl, setFaviconUrl] = useState(link.favicon);
-  // const [initialBgColor] = useState(getRandomLightColor());
   const [isMobile] = useState(window.innerWidth <= 600);
   const [longPressTimer, setLongPressTimer] = useState(null);
   const [touchStartTime, setTouchStartTime] = useState(0);
@@ -1278,7 +1293,7 @@ const LinkItem = React.memo(({ link, isHome, onEdit, getInitial }) => {
         <div className="link-icon">
           <div className="link-initial" style={{ 
             display: showFavicon ? 'none' : 'flex', 
-            background: initialBgColor 
+            background: link.initialBgColor || 'var(--initial-color-1)' 
           }}>
             {getInitial(link.name)}
           </div>
